@@ -1,0 +1,14 @@
+# 1. SEGURIDAD (Tus claves API)
+.env
+
+# 2. SISTEMA (Entorno virtual y base de datos local)
+venv/
+db.sqlite3
+
+# 3. BASURA DE PYTHON (Archivos compilados)
+__pycache__/
+*.pyc
+
+# 4. Logs y VS Code
+*.log
+.vscode/
