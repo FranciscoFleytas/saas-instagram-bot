@@ -17,7 +17,7 @@ class ScraperBot(BotEngine):
     adaptado a la arquitectura de clases de Django.
     """
 
-    # --- CONFIGURACIÓN DE NICHOS (Copiada del script funcional) ---
+    # --- CONFIGURACIÓN DE NICHOS (INTACTA) ---
     NICHE_MAPPING = {
         "Salud & Medicina": ["medico", "doctor", "medic", "surgeon", "cirujano", "dermatologist", "dentist", "dentista", "nutritionist", "nutricionista", "wellness", "bienestar", "mental health", "pediatrician"],
         "Real Estate & Arquitectura": ["real estate", "bienes raices", "realtor", "architect", "arquitecto", "interior design", "property", "broker", "construction"],
@@ -32,13 +32,25 @@ class ScraperBot(BotEngine):
         "Lifestyle, Fitness & Food": ["fitness", "gym", "trainer", "yoga", "chef", "foodie", "travel", "luxury", "lifestyle"]
     }
 
-    def __init__(self, account_data, proxy_data=None):
+    def __init__(self, account_data, proxy_data=None, filters=None):
         self.username_input = account_data.username
         try:
             self.password_input = account_data.get_password()
         except Exception as e:
             print(f"Advertencia: No se pudo desencriptar password: {e}")
             self.password_input = None
+
+        # Configuración por defecto si no vienen filtros (Lógica solicitada)
+        self.filters = filters if filters else {
+            "followers_min": 1000,
+            "followers_max": 100000,
+            "engagement_min": 0.0,
+            "engagement_max": 3.0,
+            "posts_min": 15,
+            "target_niche": [] # Lista vacía = cualquiera
+        }
+        
+        print(f"[{self.username_input}] Filtros activos: {self.filters}")
 
         super().__init__(account_data=account_data, proxy_data=proxy_data)
 
@@ -145,6 +157,7 @@ class ScraperBot(BotEngine):
     def _analyze_profile_visual(self, current_username):
         """
         Implementación de analyze_profile_visual de proxy_selenium.py
+        AHORA CON VARIABLES DINÁMICAS.
         """
         try:
             wait = WebDriverWait(self.driver, 4) 
@@ -169,23 +182,42 @@ class ScraperBot(BotEngine):
             if f_match: followers = self._parse_social_number(f_match.group(1))
             if p_match: posts = self._parse_social_number(p_match.group(1))
 
-            # --- Filtros de tu script original ---
-            if not (1000 <= followers <= 100000): # MIN_FOLLOWERS / MAX_FOLLOWERS_CAP
-                print(f"[Lead Descartado] @{current_username} | Followers: {followers} (Fuera de rango)")
+            # --- VARIABLES DINÁMICAS DESDE self.filters ---
+            min_f = self.filters.get('followers_min', 1000)
+            max_f = self.filters.get('followers_max', 100000)
+            min_p = self.filters.get('posts_min', 15)
+            target_niches = self.filters.get('target_niche', [])
+            
+            # --- Filtros Dinámicos ---
+            
+            # 1. Seguidores
+            if not (min_f <= followers <= max_f): 
+                print(f"[Lead Descartado] @{current_username} | Followers: {followers} (Requerido: {min_f}-{max_f})")
                 return None
             
-            if posts < 50: # MIN_POSTS (Ajustado)
-                print(f"[Lead Descartado] @{current_username} | Posts: {posts} (Muy pocos)")
+            # 2. Posts
+            if posts < min_p: 
+                print(f"[Lead Descartado] @{current_username} | Posts: {posts} (Requerido: {min_p})")
                 return None
             
-            # --- Cálculo ---
-            engagement = self._calculate_real_engagement(followers)
-            category = self._extract_category()
             niche = self._get_niche_match(meta_content)
             
-            # --- Log y Decisión ---
+            # 3. Nicho (Si el cliente especificó alguno)
+            if target_niches and isinstance(target_niches, list):
+                if niche not in target_niches:
+                    print(f"[Lead Descartado] @{current_username} | Nicho: {niche} (No coincide con {target_niches})")
+                    return None
+
+            # --- Cálculo Engagement ---
+            engagement = self._calculate_real_engagement(followers)
+            category = self._extract_category()
             
-            # Caso "Oculto" -> Es válido
+            # --- Log y Decisión Dinámica ---
+            
+            min_eng = self.filters.get('engagement_min', 0.0)
+            max_eng = self.filters.get('engagement_max', 3.0)
+
+            # Caso "Oculto" -> Es válido (generalmente se asume bajo/malo o oculto por privacidad)
             if isinstance(engagement, str):
                 print(f"   [OK - OCULTO] @{current_username} | F:{followers} | Eng:{engagement}")
                 return {
@@ -197,15 +229,14 @@ class ScraperBot(BotEngine):
             if isinstance(engagement, (int, float)):
                 print(f"   [INFO] @{current_username} | F:{followers} | Eng:{engagement}%")
                 
-                # --- CAMBIO DE LÓGICA: BUSCAMOS ENGAGEMENT BAJO ---
-                # Guardamos si es MENOR a 3.0% y MAYOR a 0.0% (opcional, para evitar cuentas 100% muertas)
-                if 0.0 <= engagement < 3.0: 
+                # Verificación Dinámica del Rango
+                if min_eng <= engagement <= max_eng:
                     return {
                         "followers": followers, "posts": posts, "category": category, 
                         "niche": niche, "engagement": engagement, "url": self.driver.current_url
                     }
                 else:
-                    print(f"   [ALTO ENGAGEMENT] {engagement}% (Descartado por ser muy bueno)")
+                    print(f"   [FILTRO ENGAGEMENT] {engagement}% fuera de rango ({min_eng}-{max_eng}%)")
                     return None
 
             return None
@@ -214,7 +245,7 @@ class ScraperBot(BotEngine):
             print(f"[Error Análisis] {e}")
             return None
 
-    # --- LOOP PRINCIPAL ---
+    # --- LOOP PRINCIPAL (Idéntico al funcional) ---
     def run_scraping_task(self, target_profile, max_leads=50):
         print(f"--- Iniciando Scraping (Modo proxy_selenium) en @{target_profile} ---")
         
@@ -268,7 +299,7 @@ class ScraperBot(BotEngine):
                     
                     self.driver.get(f"https://www.instagram.com/{user}/")
                     
-                    # Llamamos a la lógica importada
+                    # Llamamos a la lógica importada (ahora dinámica)
                     data = self._analyze_profile_visual(current_username=user)
                     
                     if data:
