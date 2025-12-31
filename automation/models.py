@@ -7,7 +7,7 @@ from django.conf import settings
 
 # Clave de encriptación (En producción, mover a variables de entorno)
 # Generar una con: Fernet.generate_key()
-ENCRYPTION_KEY = b'tu_clave_generada_aqui_32_bytes_base64='
+ENCRYPTION_KEY = b'4-RTmVOTmyLdiAuIDTs4vCziukyeexXLhrPRXNHuI_c='
 
 class Agency(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
