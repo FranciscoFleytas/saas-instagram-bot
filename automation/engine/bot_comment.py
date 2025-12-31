@@ -1,9 +1,9 @@
 import time
 import random
+import re
 import google.generativeai as genai
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import StaleElementReferenceException, TimeoutException
@@ -14,7 +14,7 @@ from .engine_base import BotEngine
 class CommentBot(BotEngine):
     """
     Motor de Interacción: Comenta, Da Like y Guarda posts.
-    Optimizado con datos reales del Diagnóstico (Labels confirmados).
+    Versión 6.0: Lógica Híbrida (Caption + Visual) con Fallback a Solo Visual.
     """
     
     def __init__(self, account_data, proxy_data=None):
@@ -25,24 +25,37 @@ class CommentBot(BotEngine):
         self.model = genai.GenerativeModel('gemini-2.5-flash')
 
     # ==============================================================================
-    # 1. LÓGICA DE LECTURA
+    # 1. LÓGICA DE LECTURA E INTELIGENCIA
     # ==============================================================================
     def _get_post_context(self):
-        context = {"caption": "", "image_desc": ""}
+        """
+        Extrae y LIMPIA la información. 
+        Si el caption son solo metadatos (likes, fechas), lo devuelve vacío.
+        """
+        context = {"caption": "", "image_desc": "Visual content"}
         try:
-            # 1. Meta Tag og:description
+            # 1. Intentar leer Meta Tag og:description
             try:
                 meta_desc = self.driver.find_element(By.XPATH, "//meta[@property='og:description'] | //meta[@name='description']")
                 raw_content = meta_desc.get_attribute("content")
-                if ":" in raw_content:
+                
+                # --- LIMPIEZA DE BASURA (METADATA) ---
+                clean_caption = raw_content
+                
+                # Si dice "Usuario on Instagram: 'Texto'", extraemos solo el texto
+                if " on Instagram" in raw_content and ":" in raw_content:
                     clean_caption = raw_content.split(":", 1)[1].strip()
-                    clean_caption = clean_caption.replace('"', '')
-                    context["caption"] = clean_caption
-                else:
-                    context["caption"] = raw_content
+                    clean_caption = clean_caption.replace('"', '').replace("'", "")
+                
+                # Si contiene palabras de sistema como "likes", "comments", lo marcamos como VACÍO
+                # Esto obliga a la IA a usar solo la imagen.
+                if "likes" in clean_caption.lower() and "comments" in clean_caption.lower():
+                    clean_caption = "" 
+                
+                context["caption"] = clean_caption
             except: pass
 
-            # 2. Alt Text (Respaldo)
+            # 2. Leer Alt Text de imagen (Nuestros "Ojos")
             try:
                 img_elem = self.driver.find_element(By.XPATH, "//img[@alt and string-length(@alt)>5]")
                 alt = img_elem.get_attribute("alt")
@@ -51,57 +64,74 @@ class CommentBot(BotEngine):
 
         except Exception as e:
             print(f"[Error Contexto] {e}")
+            
         return context
 
     def _generate_ai_comment(self, post_context):
+        """
+        Prompt inteligente que decide si usar Texto+Foto o Solo Foto.
+        """
+        
         text_angles = [
-            "FOCUS: Agree strongly with the main point.",
-            "FOCUS: Pick a specific keyword from the caption.",
-            "FOCUS: Compliment the clarity of the explanation.",
-            "FOCUS: Minimalist agreement (3-5 words)."
+            "FOCUS: Compliment the visual aesthetic.",
+            "FOCUS: Minimalist agreement (Cool, Great shot).",
+            "FOCUS: Highlight the mood of the image."
         ]
-        selected_angle = random.choice(text_angles)
         
         caption = post_context.get('caption', '')
-        if not caption: caption = "Focus on visual aesthetics."
-
+        
+        # Si hay texto real, agregamos ángulos de conversación profunda
+        if len(caption) > 5:
+            text_angles.extend([
+                "FOCUS: Agree with the main point of the text.",
+                "FOCUS: Mention a keyword from the caption.",
+                "FOCUS: Highlight the mindset described."
+            ])
+            
+        selected_angle = random.choice(text_angles)
+        
+        # Palabras prohibidas
+        common_words = ["wow", "good", "great", "nice", "love", "awesome", "amazing"]
+        forbidden = random.sample(common_words, 3)
+        
         prompt = f"""
         ROLE: Expert Social Media User.
-        TASK: Write a comment for an Instagram post.
+        TASK: Write a SHORT, natural comment for an Instagram post.
         
-        POST CONTEXT:
-        - Caption: "{caption}"
-        - Visual: "{post_context.get('image_desc')}"
+        INPUT DATA:
+        - CAPTION (Text): "{caption}"
+        - IMAGE (Visual Description): "{post_context.get('image_desc')}"
         
-        INSTRUCTION:
-        1. Read the Caption carefully.
-        2. Write a short, natural comment.
-        3. Angle: {selected_angle}
+        LOGIC INSTRUCTIONS:
+        1. CHECK CAPTION: Is the 'CAPTION' empty or does it look like a date/number?
+           - YES -> IGNORE the caption completely. Write a comment based ONLY on the IMAGE.
+           - NO  -> Write a comment connecting the CAPTION topic with the IMAGE context.
         
         CONSTRAINTS:
-        1. Language: ENGLISH ONLY.
-        2. NO EMOJIS.
-        3. Keep it under 10 words.
-        4. No generic words like 'Great', 'Nice'.
+        - Angle: {selected_angle}
+        - Language: ENGLISH ONLY.
+        - NO EMOJIS (Strict).
+        - Max Length: 6-8 words.
+        - Forbidden words: {forbidden}
+        - Do not start with "Indeed" or formal robotic words.
         """
         try:
             response = self.model.generate_content(prompt)
             text = response.text.strip().replace('"', '').replace("Comment:", "")
+            
+            # Seguridad final anti-alucinación
+            if len(text) > 100 or ":" in text:
+                return "Solid visual."
+                
             return text
         except:
-            return "This is a really solid perspective."
+            return "Solid view."
 
     # ==============================================================================
-    # 2. HERRAMIENTAS DE INTERACCIÓN (AJUSTADAS AL DIAGNÓSTICO)
+    # 2. HERRAMIENTAS DE INTERACCIÓN (Brazo Robótico)
     # ==============================================================================
 
     def _click_icon_global(self, target_labels, avoid_labels=None):
-        """
-        Busca botones GLOBALMENTE (//*).
-        target_labels: Lista de nombres para buscar (ej: 'Like', 'Me gusta')
-        avoid_labels: Lista de nombres que indican que YA se hizo (ej: 'Deshacer me gusta')
-        """
-        # 1. Verificar si ya está hecho (Para no quitar likes o guardados)
         if avoid_labels:
             conditions_avoid = " or ".join([f"@aria-label='{label}'" for label in avoid_labels])
             xpath_avoid = f"//*[local-name()='svg' and ({conditions_avoid})]"
@@ -110,10 +140,7 @@ class CommentBot(BotEngine):
                     return "ALREADY_DONE"
             except: pass
 
-        # 2. Intentar clic en el objetivo
         conditions = " or ".join([f"@aria-label='{label}'" for label in target_labels])
-        # NOTA: Tu diagnóstico mostró que el Label está en el SVG.
-        # Buscamos el SVG y subimos a su padre clickeable.
         xpath = f"//*[local-name()='svg' and ({conditions})]/.."
         
         try:
@@ -129,39 +156,15 @@ class CommentBot(BotEngine):
 
     def like_post(self):
         print("   -> Intentando dar Like...")
-        # COMBINACIÓN: Etiquetas confirmadas en tu PC + Etiquetas estándar en Inglés
         targets = ["Me gusta", "Like"]
         avoids = ["Deshacer me gusta", "Ya no me gusta", "Unlike"]
-        
-        result = self._click_icon_global(targets, avoids)
-        
-        if result == "CLICKED":
-            print("   [LIKE] Exitoso.")
-            return True
-        elif result == "ALREADY_DONE":
-            print("   [LIKE] Ya estaba dado (Saltado).")
-            return True
-        else:
-            print("   [LIKE] No se encontró el botón.")
-            return False
+        return True if self._click_icon_global(targets, avoids) in ["CLICKED", "ALREADY_DONE"] else False
 
     def save_post(self):
         print("   -> Intentando Guardar...")
-        # COMBINACIÓN: Etiquetas confirmadas en tu PC + Etiquetas estándar en Inglés
         targets = ["Guardar", "Save"]
         avoids = ["Eliminar", "Eliminar de guardado", "Remove", "Unsave"]
-        
-        result = self._click_icon_global(targets, avoids)
-        
-        if result == "CLICKED":
-            print("   [SAVE] Exitoso.")
-            return True
-        elif result == "ALREADY_DONE":
-            print("   [SAVE] Ya estaba guardado (Saltado).")
-            return True
-        else:
-            print("   [SAVE] No se encontró el botón.")
-            return False
+        return True if self._click_icon_global(targets, avoids) in ["CLICKED", "ALREADY_DONE"] else False
 
     def comment_post(self, context):
         print("   -> Generando Comentario IA...")
@@ -169,18 +172,25 @@ class CommentBot(BotEngine):
         print(f"   [AI] Texto: {comment_text}")
         
         try:
-            # Selector de la caja de texto (Confirmado suele ser textarea)
             xpath_area = "//textarea[@aria-label='Add a comment…'] | //textarea[@aria-label='Agrega un comentario...']"
             wait = WebDriverWait(self.driver, 10)
-            box = wait.until(EC.presence_of_element_located((By.XPATH, xpath_area)))
             
+            # Click Inicial
+            box = wait.until(EC.presence_of_element_located((By.XPATH, xpath_area)))
             self.driver.execute_script("arguments[0].click();", box)
             time.sleep(1)
             
-            self.human_typing(box, comment_text)
+            # Escritura Robusta (Usa el fix de EngineBase)
+            self.human_typing(xpath_area, comment_text)
             time.sleep(random.uniform(0.5, 1.5))
             
-            box.send_keys(Keys.ENTER)
+            # Enviar
+            try:
+                box.send_keys(Keys.ENTER)
+            except StaleElementReferenceException:
+                box = wait.until(EC.presence_of_element_located((By.XPATH, xpath_area)))
+                box.send_keys(Keys.ENTER)
+                
             print("   [COMENTARIO] Enviado.")
             return True
         except Exception as e:
@@ -197,8 +207,10 @@ class CommentBot(BotEngine):
             time.sleep(random.uniform(4, 6))
             self.dismiss_popups()
 
+            # Extraemos contexto LIMPIO
             context = self._get_post_context()
-            print(f"   [CONTEXTO] Caption: {context['caption'][:40]}...")
+            print(f"   [CONTEXTO] Caption limpio: '{context['caption'][:40]}...'")
+            print(f"   [CONTEXTO] Imagen: '{context['image_desc'][:40]}...'")
 
             if do_like:
                 self.like_post()
