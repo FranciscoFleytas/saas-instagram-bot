@@ -151,10 +151,15 @@ def task_run_outreach(self, account_id, lead_id):
 # ==============================================================================
 # TAREA 3: ENGAGEMENT 
 # ==============================================================================
+# ==============================================================================
+# TAREA 3: ENGAGEMENT (Actualizada)
+# ==============================================================================
 @shared_task(bind=True)
-def task_run_comment(self, account_id, post_url, do_like=True, do_save=False, do_comment=True):
+def task_run_comment(self, account_id, post_url, do_like=True, do_save=False, do_comment=True, 
+                     user_persona=None, focus_selection=None): # <--- 1. Agregamos argumentos aquí
     """
     Realiza interacciones en un post (Like, Save, Comentario).
+    Soporta personalización de contexto (persona) y foco.
     """
     bot = None
     try:
@@ -166,11 +171,14 @@ def task_run_comment(self, account_id, post_url, do_like=True, do_save=False, do
         bot.start_driver()
         bot.login()
         
+        # 2. Pasamos los nuevos argumentos al motor
         success = bot.execute_interaction(
             post_url=post_url,
             do_like=do_like,
             do_save=do_save,
-            do_comment=do_comment
+            do_comment=do_comment,
+            user_persona=user_persona,       # <--- Nuevo
+            focus_selection=focus_selection  # <--- Nuevo
         )
         
         return "INTERACTION_SUCCESS" if success else "INTERACTION_FAILED"

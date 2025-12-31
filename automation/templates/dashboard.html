@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Panel de Control{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card card-primary card-outline">
+            <div class="card-header">
+                <h5 class="m-0">Configuración de Interacción</h5>
+            </div>
+            <div class="card-body">
+                
+                <div class="form-group">
+                    <label>URL del Post Objetivo</label>
+                    <input type="text" id="postUrl" class="form-control" placeholder="https://instagram.com/p/...">
+                </div>
+
+                <div class="form-group">
+                    <label>Personalidad del Bot (User Persona)</label>
+                    <textarea id="aiPersona" class="form-control" rows="3" placeholder="Ej: Soy un experto en moda urbana, usa jerga joven y cool."></textarea>
+                    <small class="text-muted">Instruye a la IA sobre quién debe fingir ser.</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Foco del Comentario</label>
+                    <div class="custom-control custom-checkbox">
+                        <input class="custom-control-input focus-check" type="checkbox" id="focus1" value="Elogiar Estilo">
+                        <label for="focus1" class="custom-control-label">Elogiar Estilo Visual</label>
+                    </div>
+                    <div class="custom-control custom-checkbox">
+                        <input class="custom-control-input focus-check" type="checkbox" id="focus2" value="Coincidir con el Texto">
+                        <label for="focus2" class="custom-control-label">Coincidir con Opinión</label>
+                    </div>
+                    <div class="custom-control custom-checkbox">
+                        <input class="custom-control-input focus-check" type="checkbox" id="focus3" value="Pregunta Curiosa">
+                        <label for="focus3" class="custom-control-label">Hacer Pregunta (Engagement)</label>
+                    </div>
+                </div>
+
+                <hr>
+                
+                <button onclick="startBot()" class="btn btn-success btn-block btn-lg">
+                    <i class="fas fa-rocket"></i> Iniciar Bot Ahora
+                </button>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card card-dark">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-terminal"></i> Live Logs</h3>
+            </div>
+            <div class="card-body bg-black" style="height: 400px; overflow-y: auto; font-family: monospace; color: #00ff00;">
+                <div id="logConsole">
+                    <span class="text-muted">> Esperando comandos...</span><br>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // ID de la cuenta (En producción esto vendría dinámico desde Django)
+    const ACCOUNT_ID = "{{ account_id }}"; 
+
+    function log(message) {
+        const consoleDiv = document.getElementById('logConsole');
+        const timestamp = new Date().toLocaleTimeString();
+        consoleDiv.innerHTML += `[${timestamp}] ${message}<br>`;
+        consoleDiv.scrollTop = consoleDiv.scrollHeight;
+    }
+
+    function startBot() {
+        const url = document.getElementById('postUrl').value;
+        const persona = document.getElementById('aiPersona').value;
+        
+        // Recolectar checkboxes seleccionados
+        let selectedFocus = [];
+        document.querySelectorAll('.focus-check:checked').forEach((checkbox) => {
+            selectedFocus.push(checkbox.value);
+        });
+
+        if (!url) {
+            alert("Por favor ingresa una URL");
+            return;
+        }
+
+        log("🚀 Enviando orden al servidor...");
+
+        // Petición a nuestra API
+        fetch(`/api/account/${ACCOUNT_ID}/start-bot/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}' // Django security
+            },
+            body: JSON.stringify({
+                post_url: url,
+                user_persona: persona,
+                focus_selection: selectedFocus
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.status) {
+                log(`✅ ÉXITO: Tarea iniciada ID: ${data.task_id}`);
+                log(`ℹ️ Config usada: ${persona.substring(0, 20)}...`);
+            } else {
+                log(`❌ ERROR: ${data.error}`);
+            }
+        })
+        .catch(error => {
+            log(`❌ ERROR DE RED: ${error}`);
+        });
+    }
+</script>
+{% endblock %}

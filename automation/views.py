@@ -1,126 +1,82 @@
-import json
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth.decorators import login_required
-
-# Importamos Modelos
-from .models import IGAccount, Lead
-
-# Importamos las Tareas de Celery
-from .tasks import task_run_scraping, task_run_outreach, task_run_comment
+from django.shortcuts import render
+from rest_framework import generics
+from rest_framework.response import Response
+from rest_framework.decorators import api_view
+from .models import IGAccount
+from .serializers import IGAccountSerializer
+from .tasks import task_run_comment
 
 # ==============================================================================
-# VISTA 1: INICIAR SCRAPING
+# 1. VISTA FRONTEND (HTML)
 # ==============================================================================
-@csrf_exempt
-@login_required
-def start_scraping_view(request):
+def dashboard_view(request):
     """
-    Endpoint para iniciar el Scraper.
-    Payload: { "account_id": 1, "target_profile": "cliente_objetivo", "max_leads": 50 }
+    Renderiza la plantilla HTML de AdminLTE (dashboard.html).
+    Pasamos el ID de la cuenta de prueba en el contexto.
     """
-    if request.method == "POST":
-        try:
-            data = json.loads(request.body)
-            account_id = data.get('account_id')
-            target_profile = data.get('target_profile')
-            max_leads = int(data.get('max_leads', 50))
-            
-            if not account_id or not target_profile:
-                return JsonResponse({"status": "error", "message": "Faltan datos obligatorios"}, status=400)
-
-            # Verificar cuenta
-            try:
-                account = IGAccount.objects.get(id=account_id)
-            except IGAccount.DoesNotExist:
-                return JsonResponse({"status": "error", "message": "Cuenta IG no encontrada"}, status=404)
-
-            # Lanzar Tarea
-            task_run_scraping.delay(account_id, target_profile, max_leads)
-
-            return JsonResponse({
-                "status": "success", 
-                "message": f"Bot iniciado. Buscando {max_leads} leads de @{target_profile}."
-            })
-
-        except Exception as e:
-            return JsonResponse({"status": "error", "message": str(e)}, status=500)
-
-    return JsonResponse({"status": "error", "message": "Método no permitido"}, status=405)
-
+    # ID de tu cuenta real para pruebas (Hardcodeado por ahora)
+    test_account_id = '11816414-0378-459c-af3a-fac0ee101944'
+    
+    context = {
+        'account_id': test_account_id
+    }
+    return render(request, 'dashboard.html', context)
 
 # ==============================================================================
-# VISTA 2: INICIAR OUTREACH (Envío de DM)
+# 2. API: CONFIGURACIÓN DE CUENTA (Lectura/Escritura)
 # ==============================================================================
-@csrf_exempt
-@login_required
-def start_outreach_view(request):
+class AccountConfigView(generics.RetrieveUpdateAPIView):
     """
-    Endpoint para enviar un DM a un Lead específico.
-    Payload: { "account_id": 1, "lead_id": 450 }
+    Permite al Dashboard leer y guardar la 'ai_persona' y 'ai_focus'.
+    Endpoint: GET/PUT /api/account/<uuid:id>/config/
     """
-    if request.method == "POST":
-        try:
-            data = json.loads(request.body)
-            account_id = data.get('account_id')
-            lead_id = data.get('lead_id')
-
-            if not account_id or not lead_id:
-                return JsonResponse({"status": "error", "message": "Faltan datos (account_id o lead_id)"}, status=400)
-
-            # Validaciones rápidas de existencia
-            if not IGAccount.objects.filter(id=account_id).exists():
-                 return JsonResponse({"status": "error", "message": "Cuenta IG no existe"}, status=404)
-            
-            if not Lead.objects.filter(id=lead_id).exists():
-                 return JsonResponse({"status": "error", "message": "Lead no existe"}, status=404)
-
-            # Lanzar Tarea de Outreach
-            task_run_outreach.delay(account_id, lead_id)
-
-            return JsonResponse({
-                "status": "success", 
-                "message": f"Bot de Outreach activado para el Lead ID {lead_id}."
-            })
-
-        except Exception as e:
-            return JsonResponse({"status": "error", "message": str(e)}, status=500)
-
-    return JsonResponse({"status": "error", "message": "Método no permitido"}, status=405)
-
+    queryset = IGAccount.objects.all()
+    serializer_class = IGAccountSerializer
+    lookup_field = 'id'
 
 # ==============================================================================
-# VISTA 3: INICIAR COMENTARIO (Engagement)
+# 3. API: DISPARADOR DEL BOT (Trigger)
 # ==============================================================================
-@csrf_exempt
-@login_required
-def start_comment_view(request):
+@api_view(['POST'])
+def trigger_bot_interaction(request, pk):
     """
-    Endpoint para dejar un comentario en un post.
-    Payload: { "account_id": 1, "post_url": "https://inst...", "custom_instruction": "Sé amable" }
+    Recibe la orden del Dashboard para iniciar el bot.
+    Acepta parámetros manuales (URL, Persona, Focus) y los pasa a Celery.
+    Endpoint: POST /api/account/<uuid:pk>/start-bot/
     """
-    if request.method == "POST":
-        try:
-            data = json.loads(request.body)
-            account_id = data.get('account_id')
-            post_url = data.get('post_url')
-            custom_instruction = data.get('custom_instruction', None) # Opcional
+    try:
+        account = IGAccount.objects.get(id=pk)
+        
+        # 1. Capturar datos del JSON enviado por el Dashboard
+        post_url = request.data.get('post_url')
+        persona = request.data.get('user_persona')     # Texto del textarea
+        focus = request.data.get('focus_selection')    # Lista de checkboxes
+        
+        # Validación básica
+        if not post_url:
+            return Response({"error": "Falta la URL del post (post_url)"}, status=400)
 
-            if not account_id or not post_url:
-                return JsonResponse({"status": "error", "message": "Faltan datos (account_id o post_url)"}, status=400)
-
-            if not IGAccount.objects.filter(id=account_id).exists():
-                 return JsonResponse({"status": "error", "message": "Cuenta IG no existe"}, status=404)
-
-            # Lanzar Tarea de Comentario
-            task_run_comment.delay(account_id, post_url, custom_instruction)
-
-            return JsonResponse({
-                "status": "success", 
-                "message": f"Bot de Comentarios iniciado para el post."
-            })
-
-        except Exception as e:
-            return JsonResponse({"status": "error", "message": str(e)}, status=500)
-
-    return JsonResponse({"status": "error", "message": "Método no permitido"}, status=405)
+        # 2. Disparar la tarea de Celery con los NUEVOS argumentos
+        task_id = task_run_comment.delay(
+            account_id=str(account.id),
+            post_url=post_url,
+            do_comment=True,
+            # Pasamos lo que vino del front. 
+            # Si vienen vacíos (None), la tarea usará los de la DB.
+            user_persona=persona,    
+            focus_selection=focus    
+        )
+        
+        return Response({
+            "status": "Bot iniciado correctamente", 
+            "task_id": str(task_id),
+            "debug_info": {
+                "persona_sent": persona,
+                "focus_sent": focus
+            }
+        })
+        
+    except IGAccount.DoesNotExist:
+        return Response({"error": "Cuenta no encontrada"}, status=404)
+    except Exception as e:
+        return Response({"error": str(e)}, status=500)

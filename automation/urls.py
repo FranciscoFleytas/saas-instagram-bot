@@ -1,13 +1,11 @@
 from django.urls import path
-from . import views
+from .views import dashboard_view, AccountConfigView, trigger_bot_interaction
 
 urlpatterns = [
-    # Endpoint para Scraper
-    path('api/start-scraping/', views.start_scraping_view, name='start_scraping'),
-    
-    # Endpoint para Outreach (DMs)
-    path('api/start-outreach/', views.start_outreach_view, name='start_outreach'),
-    
-    # Endpoint para Comentarios (Engagement)
-    path('api/start-comment/', views.start_comment_view, name='start_comment'),
+    # La Interfaz Gráfica
+    path('dashboard/', dashboard_view, name='dashboard-ui'),
+
+    # Las APIs (Cerebro)
+    path('api/account/<uuid:id>/config/', AccountConfigView.as_view(), name='account-config'),
+    path('api/account/<uuid:pk>/start-bot/', trigger_bot_interaction, name='start-bot'),
 ]
