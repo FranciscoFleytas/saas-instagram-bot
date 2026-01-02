@@ -1,0 +1,9 @@
+Django
+djangorestframework
+celery
+redis
+selenium
+undetected-chromedriver
+google-generativeai
+requests
+python-dotenv

@@ -3,6 +3,7 @@
 
 # 2. SISTEMA (Entorno virtual y base de datos local)
 venv/
+.venv/
 db.sqlite3
 
 # 3. BASURA DE PYTHON (Archivos compilados)
