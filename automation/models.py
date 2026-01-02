@@ -50,8 +50,26 @@ class IGAccount(models.Model):
         self.password_encrypted = f.encrypt(raw_password.encode())
 
     def get_password(self):
-        f = Fernet(ENCRYPTION_KEY)
-        return f.decrypt(self.password_encrypted).decode()
+        """
+        Desencripta la contraseña manejando la compatibilidad con PostgreSQL.
+        """
+        if not self.password_encrypted:
+            return None
+            
+        try:
+            f = Fernet(ENCRYPTION_KEY)
+            
+            # CORRECCIÓN CRÍTICA PARA POSTGRESQL:
+            data = self.password_encrypted
+            # Si viene como memoryview (Postgres), lo forzamos a bytes
+            if isinstance(data, memoryview):
+                data = bytes(data)
+            # Si ya es bytes (SQLite), lo dejamos igual
+            
+            return f.decrypt(data).decode()
+        except Exception as e:
+            print(f"Error desencriptando password para {self.username}: {e}")
+            return None
 
 class Lead(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

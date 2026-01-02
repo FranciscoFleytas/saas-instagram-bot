@@ -74,6 +74,17 @@
                             <label>Cantidad a Extraer</label>
                             <input type="number" id="scrapeAmount" class="form-control" value="5" max="50">
                         </div>
+
+                        <div class="form-check form-switch my-3">
+                            <input class="form-check-input" type="checkbox" id="scrapingFastMode" name="use_fast_mode">
+                            <label class="form-check-label" for="scrapingFastMode">
+                                ⚡ <strong>Activar Modo API (Fast Scraping)</strong>
+                                <small class="d-block text-muted">
+                                    Usa el Enjambre de Bots para extraer leads en segundos sin abrir navegador.
+                                </small>
+                            </label>
+                        </div>
+
                         <button onclick="startScraping()" class="btn btn-warning btn-block font-weight-bold">
                             <i class="fas fa-search"></i> EXTRAER LEADS AHORA
                         </button>
@@ -128,18 +139,15 @@
                             <textarea id="aiCustomPrompt" class="form-control" rows="3" placeholder="Escribe aquí tu prompt personalizado para que el bot genere el comentario (ej: 'Comenta resaltando beneficios, sin emojis y con tono profesional')."></textarea>
                             <small class="text-muted">Si completas este campo, tendrá prioridad sobre la plantilla automática.</small>
                         </div>
-
-                        <hr>
-                            <label>Motor de Ejecución</label>
+                        <div class="form-group">
                             <div class="custom-control custom-switch">
                                 <input type="checkbox" class="custom-control-input" id="engineSwitch">
                                 <label class="custom-control-label" for="engineSwitch">
-                                    Activar Modo Turbo (API - Rápido pero más arriesgado)
+                                    ⚡ Activar Modo API (Rápido, sin navegador)
                                 </label>
                             </div>
-                            <small class="text-muted mb-3 d-block">
-                                Desactivado: Usa Navegador (Lento y Seguro). Activado: Usa API directa.
-                            </small>
+                            <small class="text-muted">Desactivado = Simulación Humana (Selenium). Activado = Instagrapi.</small>
+                        </div>
 
                         <button onclick="startCommentBot()" class="btn btn-success btn-block font-weight-bold">
                             <i class="fas fa-rocket"></i> EJECUTAR ACCIONES
@@ -257,13 +265,14 @@
         const doLike = document.getElementById('checkLike').checked;
         const doComment = document.getElementById('checkComment').checked;
         const doSave = document.getElementById('checkSave').checked;
+        const useFastMode = document.getElementById('engineSwitch').checked;
 
         if(!url) return alert("Falta URL del post");
         if(doComment && !persona) return alert("Selecciona una personalidad para comentar");
         if(!doLike && !doComment && !doSave) return alert("¡Selecciona al menos una acción!");
 
         log(`Iniciando interacción...`);
-        log(`⚙️ Config: Like=${doLike}, Comentar=${doComment}, Guardar=${doSave}`);
+        log(`Config: Like=${doLike}, Comentar=${doComment}, Guardar=${doSave}`);
 
         fetch(`/api/account/${ACCOUNT_ID}/start-bot/`, {
             method: 'POST',
@@ -274,7 +283,8 @@
                 do_like: doLike,
                 do_comment: doComment,
                 do_save: doSave,
-                user_prompt: customPrompt  // <--- ¡ESTA LÍNEA FALTABA!
+                user_prompt: customPrompt,
+                use_fast_mode: useFastMode
             })
         })
         .then(res => {

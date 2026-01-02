@@ -37,6 +37,7 @@ def trigger_bot_interaction(request, pk):
         post_url = request.data.get('post_url')
         persona = request.data.get('user_persona')
         user_prompt = request.data.get('user_prompt')
+        use_fast_mode = request.data.get('use_fast_mode', False)
         
         # Leemos las opciones del Dashboard (por defecto True si no llegan)
         do_like = request.data.get('do_like', True)
@@ -53,7 +54,8 @@ def trigger_bot_interaction(request, pk):
             do_like=do_like,
             do_comment=do_comment,
             do_save=do_save,
-            user_prompt=user_prompt
+            user_prompt=user_prompt,
+            use_fast_mode=use_fast_mode
         )
         return Response({"status": "Bot Interacción iniciado", "task_id": str(task_id)})
     except IGAccount.DoesNotExist: 
