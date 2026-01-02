@@ -156,29 +156,31 @@ def task_run_outreach(self, account_id, lead_id):
 # ==============================================================================
 @shared_task(bind=True)
 def task_run_comment(self, account_id, post_url, do_like=True, do_save=False, do_comment=True, 
-                     user_persona=None, focus_selection=None): # <--- 1. Agregamos argumentos aquí
+                     user_persona=None, focus_selection=None, user_prompt=None): # <--- AQUÍ FALTABA
     """
-    Realiza interacciones en un post (Like, Save, Comentario).
-    Soporta personalización de contexto (persona) y foco.
+    Realiza interacciones en un post. Soporta prompt personalizado.
     """
     bot = None
     try:
         logger.info(f"[TASK] Interacción en {post_url} (Like={do_like}, Save={do_save}, Cmt={do_comment})")
         
         account = IGAccount.objects.get(id=account_id)
+        # Importamos aquí para evitar ciclos
+        from automation.engine.bot_comment import CommentBot 
         bot = CommentBot(account_data=account, proxy_data=account.proxy)
         
-        bot.start_driver()
-        bot.login()
+        # Ya no usamos start_driver/login manuales porque BotEngine lo hace en el __init__
+        # pero si tu logica actual los requiere explicitamente, déjalos.
+        # Asumiendo tu bot_comment.py actual, execute_interaction maneja la navegación.
         
-        # 2. Pasamos los nuevos argumentos al motor
         success = bot.execute_interaction(
             post_url=post_url,
             do_like=do_like,
             do_save=do_save,
             do_comment=do_comment,
-            user_persona=user_persona,       # <--- Nuevo
-            focus_selection=focus_selection  # <--- Nuevo
+            user_persona=user_persona,
+            focus_selection=focus_selection,
+            user_prompt=user_prompt  # <--- SE LO PASAMOS AL BOT
         )
         
         return "INTERACTION_SUCCESS" if success else "INTERACTION_FAILED"
@@ -187,4 +189,6 @@ def task_run_comment(self, account_id, post_url, do_like=True, do_save=False, do
         logger.error(f"[TASK ERROR] Fallo en interacción: {str(e)}")
         return f"ERROR: {str(e)}"
     finally:
-        if bot: bot.close()
+        if bot: 
+            try: bot.quit()
+            except: pass

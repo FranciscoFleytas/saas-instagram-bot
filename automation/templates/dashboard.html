@@ -49,10 +49,10 @@
             <div class="card-header p-0 pt-1">
                 <ul class="nav nav-tabs" id="custom-tabs-one-tab" role="tablist">
                     <li class="nav-item">
-                        <a class="nav-link active" id="tab-scrape-link" data-toggle="pill" href="#tab-scrape" role="tab">🕵️ Minería</a>
+                        <a class="nav-link active" id="tab-scrape-link" data-toggle="pill" href="#tab-scrape" role="tab">Minería</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" id="tab-comment-link" data-toggle="pill" href="#tab-comment" role="tab">💬 Comentar</a>
+                        <a class="nav-link" id="tab-comment-link" data-toggle="pill" href="#tab-comment" role="tab">Engagement (Config)</a>
                     </li>
                 </ul>
             </div>
@@ -81,15 +81,56 @@
 
                     <div class="tab-pane fade" id="tab-comment" role="tabpanel">
                         <div class="form-group">
-                            <label>URL del Post</label>
+                            <label>URL del Post / Reel</label>
                             <input type="text" id="postUrl" class="form-control" placeholder="https://instagram.com/p/...">
                         </div>
-                        <div class="form-group">
-                            <label>Personalidad IA</label>
-                            <textarea id="aiPersona" class="form-control" rows="2">Soy un experto sarcástico.</textarea>
+                        
+                        <label>¿Qué acciones realizar?</label>
+                        <div class="row mb-3">
+                            <div class="col-4">
+                                <div class="custom-control custom-checkbox">
+                                    <input class="custom-control-input" type="checkbox" id="checkLike" checked>
+                                    <label for="checkLike" class="custom-control-label">Dar Like</label>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="custom-control custom-checkbox">
+                                    <input class="custom-control-input" type="checkbox" id="checkComment" checked>
+                                    <label for="checkComment" class="custom-control-label">Comentar</label>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="custom-control custom-checkbox">
+                                    <input class="custom-control-input" type="checkbox" id="checkSave">
+                                    <label for="checkSave" class="custom-control-label">Guardar</label>
+                                </div>
+                            </div>
                         </div>
+
+                        <div class="form-group">
+                            <label>Estilo de Comentario (Personalidad)</label>
+                            <select id="aiPersonaSelect" class="form-control" onchange="toggleCustomPersona()">
+                                <option value="Sarcástico y Divertido">Sarcástico / Divertido</option>
+                                <option value="Profesional y Serio">Profesional / Experto</option>
+                                <option value="Amigable y Emojis">Amigable / Fan</option>
+                                <option value="Hater Suave">Crítico / Polémico</option>
+                                <option value="custom">Personalizado (Escribir abajo)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" id="customPersonaGroup" style="display:none;">
+                            <label>Describe la personalidad:</label>
+                            <textarea id="aiPersonaCustom" class="form-control" rows="2" placeholder="Ej: Habla formal, breve y sin emojis..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Prompt del Comentario (opcional)</label>
+                            <textarea id="aiCustomPrompt" class="form-control" rows="3" placeholder="Escribe aquí tu prompt personalizado para que el bot genere el comentario (ej: 'Comenta resaltando beneficios, sin emojis y con tono profesional')."></textarea>
+                            <small class="text-muted">Si completas este campo, tendrá prioridad sobre la plantilla automática.</small>
+                        </div>
+
                         <button onclick="startCommentBot()" class="btn btn-success btn-block font-weight-bold">
-                            <i class="fas fa-comment"></i> COMENTAR POST AHORA
+                            <i class="fas fa-rocket"></i> EJECUTAR ACCIONES
                         </button>
                     </div>
 
@@ -150,6 +191,13 @@
         consoleDiv.scrollTop = consoleDiv.scrollHeight;
     }
 
+    function toggleCustomPersona() {
+        const val = document.getElementById('aiPersonaSelect').value;
+        const customGroup = document.getElementById('customPersonaGroup');
+        customGroup.style.display = (val === 'custom') ? 'block' : 'none';
+    }
+
+    // --- 1. SCRAPING ---
     function cleanUsername(input) {
         if (input.includes('instagram.com/')) {
             return input.split('instagram.com/')[1].split('/')[0].split('?')[0];
@@ -157,7 +205,6 @@
         return input;
     }
 
-    // --- 1. SCRAPING ---
     function startScraping() {
         let rawTarget = document.getElementById('targetUsername').value;
         const amount = document.getElementById('scrapeAmount').value;
@@ -165,7 +212,7 @@
         if(!rawTarget) return alert("Escribe un usuario objetivo");
         const target = cleanUsername(rawTarget);
         
-        log(`🕵️ Iniciando scraping en @${target} (${amount} leads)...`);
+        log(`Iniciando scraping en @${target} (${amount} leads)...`);
         
         fetch(`/api/account/${ACCOUNT_ID}/start-scraping/`, {
             method: 'POST',
@@ -174,35 +221,67 @@
         })
         .then(res => res.json())
         .then(data => {
-            if(data.status) log(`✅ Tarea Scraping ID: ${data.task_id}`);
-            else log(`❌ Error: ${data.error || data.detail}`);
+            if(data.status) log(`Tarea Scraping encolada: ${data.task_id || data.detail}`);
+            else log(`Error: ${data.error || data.detail}`);
         })
-        .catch(err => log(`❌ Error Red: ${err}`));
+        .catch(err => log(`Error Red: ${err}`));
     }
 
-    // --- 2. COMENTARIOS ---
+    // --- 2. BOT DE ENGAGEMENT (CONECTADO A CHECKBOXES) ---
+    // --- 2. BOT DE ENGAGEMENT (CONECTADO A CHECKBOXES) ---
     function startCommentBot() {
         const url = document.getElementById('postUrl').value;
-        const persona = document.getElementById('aiPersona').value;
         
-        if(!url) return alert("Falta URL");
-        log(`🚀 Iniciando comentario...`);
+        // Obtener Personalidad
+        let persona = document.getElementById('aiPersonaSelect').value;
+        if(persona === 'custom') {
+            persona = document.getElementById('aiPersonaCustom').value;
+        }
+
+        // Prompt personalizado (opcional)
+        const customPrompt = document.getElementById('aiCustomPrompt').value;
+
+        // Obtener Checkboxes (Acciones)
+        const doLike = document.getElementById('checkLike').checked;
+        const doComment = document.getElementById('checkComment').checked;
+        const doSave = document.getElementById('checkSave').checked;
+
+        if(!url) return alert("Falta URL del post");
+        if(doComment && !persona) return alert("Selecciona una personalidad para comentar");
+        if(!doLike && !doComment && !doSave) return alert("¡Selecciona al menos una acción!");
+
+        log(`Iniciando interacción...`);
+        log(`⚙️ Config: Like=${doLike}, Comentar=${doComment}, Guardar=${doSave}`);
 
         fetch(`/api/account/${ACCOUNT_ID}/start-bot/`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-            body: JSON.stringify({ post_url: url, user_persona: persona })
+            body: JSON.stringify({ 
+                post_url: url, 
+                user_persona: persona,
+                do_like: doLike,
+                do_comment: doComment,
+                do_save: doSave,
+                user_prompt: customPrompt  // <--- ¡ESTA LÍNEA FALTABA!
+            })
         })
-        .then(res => res.json())
+        .then(res => {
+            if (!res.ok) return res.text().then(text => { throw new Error(text) });
+            return res.json();
+        })
         .then(data => {
-            if(data.status) log(`✅ Tarea Comentario ID: ${data.task_id}`);
-            else log(`❌ Error: ${data.error || data.detail}`);
+            if(data.status) log(`Tarea Engagement ID: ${data.task_id}`);
+            else log(` Error: ${data.error || data.detail}`);
         })
-        .catch(err => log(`❌ Error Red: ${err}`));
+        .catch(err => {
+            console.error(err);
+            let msg = err.message;
+            if (msg.includes('<!DOCTYPE html>')) msg = "Error 500: Revisa la Terminal de Django";
+            log(` Error Critico: ${msg}`);
+        });
     }
 
-    // --- 3. CARGAR LEADS Y BOTÓN DM ---
-    // --- 3. CARGAR LEADS Y BOTÓN DM ---
+    // --- 3. CARGAR LEADS ---
     function loadLeads() {
         fetch(`/api/account/${ACCOUNT_ID}/leads/`)
         .then(res => {
@@ -213,7 +292,6 @@
             const tbody = document.getElementById('leadsTableBody');
             tbody.innerHTML = ''; 
             
-            // Actualizar KPI
             if(Array.isArray(data)) document.getElementById('kpi-leads').innerText = data.length;
 
             if(!Array.isArray(data) || data.length === 0) {
@@ -226,7 +304,7 @@
                 
                 let actionHtml = '';
                 if(lead.status === 'to_contact') {
-                    // ✅ CORRECCIÓN AQUÍ: Agregué comillas simples '' alrededor de ${lead.id}
+                    // ID con comillas simples para evitar error de sintaxis
                     actionHtml = `<button class="btn btn-sm btn-primary" onclick="sendDM('${lead.id}', '${lead.ig_username}')">
                                     <i class="fas fa-paper-plane"></i> Enviar DM
                                   </button>`;
@@ -243,19 +321,17 @@
                 `;
                 tbody.innerHTML += row;
             });
-            log("🔄 Tabla actualizada.");
+            log("Tabla actualizada.");
         })
         .catch(err => {
-            log(`❌ Error Leads: ${err.message}`);
+            log(`Error Leads: ${err.message}`);
             document.getElementById('leadsTableBody').innerHTML = '<tr><td colspan="3" class="text-danger text-center">Error cargando datos</td></tr>';
         });
     }
 
-    // --- 4. ENVIAR DM (Acción del botón) ---
     function sendDM(leadId, username) {
         if(!confirm(`¿Seguro que quieres enviar DM a @${username}?`)) return;
-
-        log(`📨 Enviando DM a @${username}...`);
+        log(`Enviando DM a @${username}...`);
         
         fetch(`/api/account/${ACCOUNT_ID}/start-outreach/`, {
             method: 'POST',
@@ -265,10 +341,10 @@
         .then(res => res.json())
         .then(data => {
             if(data.status) {
-                log(`✅ Tarea Outreach encolada.`);
-                setTimeout(loadLeads, 2000); // Recargar tabla
+                log(`Tarea Outreach encolada.`);
+                setTimeout(loadLeads, 2000); 
             } else {
-                log(`❌ Error: ${data.error || data.detail}`);
+                log(`Error: ${data.error || data.detail}`);
             }
         });
     }

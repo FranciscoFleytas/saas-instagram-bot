@@ -7,14 +7,14 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import StaleElementReferenceException, TimeoutException
+from selenium.webdriver.common.action_chains import ActionChains
 
 # Importamos la Clase Madre
 from .engine_base import BotEngine
 
 class CommentBot(BotEngine):
     """
-    Motor de Interacción: Comenta, Da Like y Guarda posts.
-    Versión 6.1: SaaS Ready (Soporta instrucciones personalizadas del cliente).
+    Motor de Interacción V7: Optimizado con lógica de Escritorio (Fast Typing + Context Fix).
     """
     
     def __init__(self, account_data, proxy_data=None):
@@ -25,27 +25,30 @@ class CommentBot(BotEngine):
         self.model = genai.GenerativeModel('gemini-2.5-flash')
 
     # ==============================================================================
-    # 1. LÓGICA DE LECTURA
+    # 1. LÓGICA DE LECTURA (Portada de script-comentarios.py)
     # ==============================================================================
     def _get_post_context(self):
-        context = {"caption": "", "image_desc": "Visual content"}
+        context = {"caption": "", "image_desc": ""}
         try:
+            # 1. Intentar Meta Tag de Descripción (Método más fiable)
             try:
                 meta_desc = self.driver.find_element(By.XPATH, "//meta[@property='og:description'] | //meta[@name='description']")
                 raw_content = meta_desc.get_attribute("content")
-                clean_caption = raw_content
                 
-                if " on Instagram" in raw_content and ":" in raw_content:
-                    clean_caption = raw_content.split(":", 1)[1].strip().replace('"', '').replace("'", "")
-                
-                if "likes" in clean_caption.lower() and "comments" in clean_caption.lower():
-                    clean_caption = "" 
-                
-                context["caption"] = clean_caption
+                # Limpieza universal (Funciona en Español e Inglés)
+                # Formato típico: "100 likes, 5 comments - Usuario: El texto del post..."
+                if ":" in raw_content:
+                    # Tomamos todo lo que está después del primer dos puntos
+                    clean_caption = raw_content.split(":", 1)[1].strip()
+                    clean_caption = clean_caption.replace('"', '') # Quitar comillas extra
+                    context["caption"] = clean_caption
+                else:
+                    context["caption"] = raw_content
             except: pass
 
+            # 2. Intentar Alt Text de la imagen (Respaldo visual)
             try:
-                img_elem = self.driver.find_element(By.XPATH, "//img[@alt and string-length(@alt)>5]")
+                img_elem = self.driver.find_element(By.XPATH, "//article//img")
                 alt = img_elem.get_attribute("alt")
                 if alt: context["image_desc"] = alt
             except: pass
@@ -55,83 +58,70 @@ class CommentBot(BotEngine):
             
         return context
 
-    def _generate_ai_comment(self, post_context, user_persona=None, focus_selection=None):
+    def _generate_ai_comment(self, post_context, user_persona=None, focus_selection=None, user_prompt=None):
         """
-        Genera comentario recibiendo parámetros opcionales del Dashboard del cliente.
+        Genera comentario fusionando reglas del sistema + instrucciones del usuario.
         """
         
-        # 1. DEFINIR FOCO (ANGLES)
-        # Si el cliente seleccionó focos en el Dashboard, usamos esos.
-        # Si no, usamos los predeterminados.
+        # 1. Definir Angulo (Focus)
         if focus_selection and isinstance(focus_selection, list) and len(focus_selection) > 0:
-            # Ejemplo: El cliente marcó ["Humor", "Pregunta"]
             selected_angle = random.choice(focus_selection)
         else:
-            # Default (Tu lógica actual)
             text_angles = [
+                "FOCUS: Agree with the main point.",
                 "FOCUS: Compliment the visual aesthetic.",
-                "FOCUS: Minimalist agreement (Cool, Great shot).",
-                "FOCUS: Highlight the mood of the image."
+                "FOCUS: Highlight the mood.",
+                "FOCUS: Minimalist agreement."
             ]
-            caption = post_context.get('caption', '')
-            if len(caption) > 5:
-                text_angles.extend([
-                    "FOCUS: Agree with the main point of the text.",
-                    "FOCUS: Mention a keyword from the caption.",
-                    "FOCUS: Highlight the mindset described."
-                ])
+            if len(post_context.get('caption', '')) > 5:
+                text_angles.append("FOCUS: Mention a keyword from the text.")
             selected_angle = random.choice(text_angles)
-        
-        # 2. DEFINIR PERSONA (Instrucción Extra)
-        # Si el cliente escribió algo en el textarea: "Soy coach de fitness, sé sarcástico."
-        custom_instruction_str = ""
-        if user_persona:
-            custom_instruction_str = f"USER IDENTITY/STYLE: {user_persona} (Adopt this persona)."
 
-        # Palabras prohibidas
-        common_words = ["wow", "good", "great", "nice", "love", "awesome", "amazing"]
-        forbidden = random.sample(common_words, 3)
+        # 2. Definir Identidad
+        persona_str = f"IDENTITY: {user_persona}" if user_persona else "IDENTITY: Expert Social Media User."
+
+        # 3. Construir Prompt Híbrido
+        # Si hay user_prompt, lo insertamos COMO INSTRUCCIÓN PRIORITARIA, no reemplazamos todo.
+        custom_instruction = ""
+        if user_prompt and isinstance(user_prompt, str) and user_prompt.strip():
+            custom_instruction = f"IMPORTANT USER INSTRUCTION: {user_prompt}"
+
+        final_prompt = f"""
+        ROLE: Social Media Expert.
+        TASK: Write a SHORT, natural Instagram comment.
         
-        prompt = f"""
-        ROLE: Expert Social Media User.
-        TASK: Write a SHORT, natural comment for an Instagram post.
+        {persona_str}
+        {custom_instruction}
         
-        {custom_instruction_str}
-        
-        INPUT DATA:
+        INPUT CONTEXT:
         - CAPTION: "{post_context.get('caption')}"
         - IMAGE: "{post_context.get('image_desc')}"
         
-        LOGIC:
-        1. If CAPTION is empty/garbage -> Ignore it, use IMAGE only.
-        2. Else -> Connect CAPTION topic with IMAGE.
-        
-        CONSTRAINTS:
-        - Angle: {selected_angle}
-        - Language: ENGLISH ONLY.
-        - NO EMOJIS (Strict).
-        - Max Length: 6-8 words.
-        - Forbidden words: {forbidden}
+        GUIDELINES:
+        1. If 'IMPORTANT USER INSTRUCTION' requires a specific language (e.g. Spanish), OBEY IT.
+        2. If no language specified, detect language from Caption and match it.
+        3. NO EMOJIS (Unless instructed otherwise).
+        4. Max length: 1 sentence.
+        5. ANGLE: {selected_angle}
         """
+
         try:
-            response = self.model.generate_content(prompt)
+            response = self.model.generate_content(final_prompt)
             text = response.text.strip().replace('"', '').replace("Comment:", "")
-            if len(text) > 100 or ":" in text: return "Solid visual."
             return text
         except:
-            return "Solid view."
+            return "Great post."
 
     # ==============================================================================
     # 2. HERRAMIENTAS DE INTERACCIÓN
     # ==============================================================================
-
     def _click_icon_global(self, target_labels, avoid_labels=None):
+        # Lógica de clicks (Like/Save) mantenida igual por ser eficiente
         if avoid_labels:
             conditions_avoid = " or ".join([f"@aria-label='{label}'" for label in avoid_labels])
             xpath_avoid = f"//*[local-name()='svg' and ({conditions_avoid})]"
             try:
-                if self.driver.find_elements(By.XPATH, xpath_avoid):
-                    return "ALREADY_DONE"
+                if self.driver.find_elements(By.XPATH, xpath_avoid): return "ALREADY_DONE"
             except: pass
 
         conditions = " or ".join([f"@aria-label='{label}'" for label in target_labels])
@@ -140,44 +130,58 @@ class CommentBot(BotEngine):
         try:
             btn = WebDriverWait(self.driver, 5).until(EC.element_to_be_clickable((By.XPATH, xpath)))
             self.driver.execute_script("arguments[0].click();", btn)
-            time.sleep(random.uniform(1, 2))
             return "CLICKED"
-        except TimeoutException:
-            return "NOT_FOUND"
-        except Exception as e:
-            print(f"   [Error Click] {e}")
-            return "ERROR"
+        except: return "NOT_FOUND"
 
     def like_post(self):
-        print("   -> Intentando dar Like...")
-        targets = ["Me gusta", "Like"]
-        avoids = ["Deshacer me gusta", "Ya no me gusta", "Unlike"]
-        return True if self._click_icon_global(targets, avoids) in ["CLICKED", "ALREADY_DONE"] else False
+        print("   -> Like...")
+        return self._click_icon_global(["Me gusta", "Like"], ["Deshacer", "Unlike"])
 
     def save_post(self):
-        print("   -> Intentando Guardar...")
-        targets = ["Guardar", "Save"]
-        avoids = ["Eliminar", "Eliminar de guardado", "Remove", "Unsave"]
-        return True if self._click_icon_global(targets, avoids) in ["CLICKED", "ALREADY_DONE"] else False
+        print("   -> Save...")
+        return self._click_icon_global(["Guardar", "Save"], ["Eliminar", "Remove"])
 
-    def comment_post(self, context, user_persona=None, focus_selection=None):
+    def comment_post(self, context, user_persona=None, focus_selection=None, user_prompt=None):
         print("   -> Generando Comentario IA...")
-        
-        # --- CAMBIO AQUÍ: Pasamos las preferencias del usuario ---
-        comment_text = self._generate_ai_comment(context, user_persona, focus_selection)
+        comment_text = self._generate_ai_comment(context, user_persona, focus_selection, user_prompt)
         print(f"   [AI] Texto: {comment_text}")
         
         try:
             xpath_area = "//textarea[@aria-label='Add a comment…'] | //textarea[@aria-label='Agrega un comentario...']"
             wait = WebDriverWait(self.driver, 10)
             
+            # 1. UBICAR Y CLICAR (Usando ActionChains como en Escritorio para mayor precisión)
             box = wait.until(EC.presence_of_element_located((By.XPATH, xpath_area)))
-            self.driver.execute_script("arguments[0].click();", box)
+            try:
+                actions = ActionChains(self.driver)
+                actions.move_to_element(box).click().perform()
+            except:
+                self.driver.execute_script("arguments[0].click();", box)
+
+            # Pausa breve para foco
             time.sleep(1)
+
+            # 2. ESCRITURA RÁPIDA (Tiempos ajustados a script-comentarios.py)
+            # Re-localizamos por seguridad
+            box = wait.until(EC.presence_of_element_located((By.XPATH, xpath_area)))
             
-            self.human_typing(xpath_area, comment_text)
-            time.sleep(random.uniform(0.5, 1.5))
+            for char in comment_text:
+                try:
+                    box.send_keys(char)
+                except StaleElementReferenceException:
+                    box = wait.until(EC.presence_of_element_located((By.XPATH, xpath_area)))
+                    box.send_keys(char)
+                except Exception:
+                    # Intento final de recuperación
+                    box = wait.until(EC.presence_of_element_located((By.XPATH, xpath_area)))
+                    box.send_keys(char)
+                
+                # VELOCIDAD AUMENTADA: 0.02 a 0.07 (Igual que escritorio)
+                time.sleep(random.uniform(0.02, 0.07))
             
+            time.sleep(random.uniform(0.5, 1.0))
+            
+            # 3. ENVIAR
             try:
                 box.send_keys(Keys.ENTER)
             except StaleElementReferenceException:
@@ -186,39 +190,38 @@ class CommentBot(BotEngine):
                 
             print("   [COMENTARIO] Enviado.")
             return True
+
         except Exception as e:
             print(f"   [ERROR COMENTARIO] {e}")
             return False
 
     # ==============================================================================
-    # 3. EJECUCIÓN PRINCIPAL CON PARÁMETROS
+    # 3. EJECUCIÓN PRINCIPAL
     # ==============================================================================
     def execute_interaction(self, post_url, do_like=True, do_save=False, do_comment=True, 
-                          user_persona=None, focus_selection=None):
-        """
-        Ahora acepta user_persona (Texto) y focus_selection (Lista)
-        """
+                          user_persona=None, focus_selection=None, user_prompt=None):
         print(f"--- Interactuando con: {post_url} ---")
         try:
             self.driver.get(post_url)
-            time.sleep(random.uniform(4, 6))
+            time.sleep(random.uniform(3, 5)) # Un poco más rápido que antes
             self.dismiss_popups()
 
             context = self._get_post_context()
-            print(f"   [CONTEXTO] Caption limpio: '{context['caption'][:40]}...'")
+            # Log más limpio para confirmar que leímos bien
+            caption_preview = context['caption'][:50].replace('\n', ' ') if context['caption'] else "Sin texto"
+            print(f"   [CONTEXTO] Caption: '{caption_preview}...'")
 
             if do_like:
                 self.like_post()
-                time.sleep(random.uniform(1, 2))
+                time.sleep(0.5)
 
             if do_save:
                 self.save_post()
-                time.sleep(random.uniform(1, 2))
+                time.sleep(0.5)
 
             if do_comment:
-                # Pasamos los parámetros hacia abajo
-                self.comment_post(context, user_persona, focus_selection)
-                time.sleep(random.uniform(3, 5))
+                self.comment_post(context, user_persona, focus_selection, user_prompt)
+                time.sleep(2)
 
             return True
 
