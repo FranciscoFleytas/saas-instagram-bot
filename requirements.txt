@@ -7,3 +7,4 @@ undetected-chromedriver
 google-generativeai
 requests
 python-dotenv
+instagrapi

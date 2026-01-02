@@ -129,6 +129,18 @@
                             <small class="text-muted">Si completas este campo, tendrá prioridad sobre la plantilla automática.</small>
                         </div>
 
+                        <hr>
+                            <label>Motor de Ejecución</label>
+                            <div class="custom-control custom-switch">
+                                <input type="checkbox" class="custom-control-input" id="engineSwitch">
+                                <label class="custom-control-label" for="engineSwitch">
+                                    Activar Modo Turbo (API - Rápido pero más arriesgado)
+                                </label>
+                            </div>
+                            <small class="text-muted mb-3 d-block">
+                                Desactivado: Usa Navegador (Lento y Seguro). Activado: Usa API directa.
+                            </small>
+
                         <button onclick="startCommentBot()" class="btn btn-success btn-block font-weight-bold">
                             <i class="fas fa-rocket"></i> EJECUTAR ACCIONES
                         </button>
