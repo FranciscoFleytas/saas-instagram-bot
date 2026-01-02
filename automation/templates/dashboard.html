@@ -1,62 +1,137 @@
 {% extends 'base.html' %}
 
-{% block page_title %}Panel de Control{% endblock %}
+{% block page_title %}Centro de Operaciones{% endblock %}
 
 {% block content %}
 <div class="row">
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-info">
+            <div class="inner">
+                <h3 id="kpi-leads">0</h3>
+                <p>Leads Detectados</p>
+            </div>
+            <div class="icon"><i class="ion ion-bag"></i></div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-success">
+            <div class="inner">
+                <h3>Bot<sup style="font-size: 20px">ON</sup></h3>
+                <p>Estado del Sistema</p>
+            </div>
+            <div class="icon"><i class="ion ion-stats-bars"></i></div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-warning">
+            <div class="inner">
+                <h3 id="kpi-dms">0</h3>
+                <p>DMs Enviados</p>
+            </div>
+            <div class="icon"><i class="ion ion-paper-airplane"></i></div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-danger">
+            <div class="inner">
+                <h3>MVP</h3>
+                <p>Versión Actual</p>
+            </div>
+            <div class="icon"><i class="ion ion-pie-graph"></i></div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    
     <div class="col-lg-6">
-        <div class="card card-primary card-outline">
-            <div class="card-header">
-                <h5 class="m-0">Configuración de Interacción</h5>
+        <div class="card card-primary card-tabs">
+            <div class="card-header p-0 pt-1">
+                <ul class="nav nav-tabs" id="custom-tabs-one-tab" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active" id="tab-scrape-link" data-toggle="pill" href="#tab-scrape" role="tab">🕵️ Minería</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="tab-comment-link" data-toggle="pill" href="#tab-comment" role="tab">💬 Comentar</a>
+                    </li>
+                </ul>
             </div>
             <div class="card-body">
-                
-                <div class="form-group">
-                    <label>URL del Post Objetivo</label>
-                    <input type="text" id="postUrl" class="form-control" placeholder="https://instagram.com/p/...">
-                </div>
-
-                <div class="form-group">
-                    <label>Personalidad del Bot (User Persona)</label>
-                    <textarea id="aiPersona" class="form-control" rows="3" placeholder="Ej: Soy un experto en moda urbana, usa jerga joven y cool."></textarea>
-                    <small class="text-muted">Instruye a la IA sobre quién debe fingir ser.</small>
-                </div>
-
-                <div class="form-group">
-                    <label>Foco del Comentario</label>
-                    <div class="custom-control custom-checkbox">
-                        <input class="custom-control-input focus-check" type="checkbox" id="focus1" value="Elogiar Estilo">
-                        <label for="focus1" class="custom-control-label">Elogiar Estilo Visual</label>
+                <div class="tab-content">
+                    
+                    <div class="tab-pane fade show active" id="tab-scrape" role="tabpanel">
+                        <div class="form-group">
+                            <label>Perfil Objetivo (Competencia)</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">@</span>
+                                </div>
+                                <input type="text" id="targetUsername" class="form-control" placeholder="Ej: nike">
+                            </div>
+                            <small class="text-muted">Extraeremos seguidores de esta cuenta.</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Cantidad a Extraer</label>
+                            <input type="number" id="scrapeAmount" class="form-control" value="5" max="50">
+                        </div>
+                        <button onclick="startScraping()" class="btn btn-warning btn-block font-weight-bold">
+                            <i class="fas fa-search"></i> EXTRAER LEADS AHORA
+                        </button>
                     </div>
-                    <div class="custom-control custom-checkbox">
-                        <input class="custom-control-input focus-check" type="checkbox" id="focus2" value="Coincidir con el Texto">
-                        <label for="focus2" class="custom-control-label">Coincidir con Opinión</label>
+
+                    <div class="tab-pane fade" id="tab-comment" role="tabpanel">
+                        <div class="form-group">
+                            <label>URL del Post</label>
+                            <input type="text" id="postUrl" class="form-control" placeholder="https://instagram.com/p/...">
+                        </div>
+                        <div class="form-group">
+                            <label>Personalidad IA</label>
+                            <textarea id="aiPersona" class="form-control" rows="2">Soy un experto sarcástico.</textarea>
+                        </div>
+                        <button onclick="startCommentBot()" class="btn btn-success btn-block font-weight-bold">
+                            <i class="fas fa-comment"></i> COMENTAR POST AHORA
+                        </button>
                     </div>
-                    <div class="custom-control custom-checkbox">
-                        <input class="custom-control-input focus-check" type="checkbox" id="focus3" value="Pregunta Curiosa">
-                        <label for="focus3" class="custom-control-label">Hacer Pregunta (Engagement)</label>
-                    </div>
+
                 </div>
+            </div>
+        </div>
 
-                <hr>
-                
-                <button onclick="startBot()" class="btn btn-success btn-block btn-lg">
-                    <i class="fas fa-rocket"></i> Iniciar Bot Ahora
-                </button>
-
+        <div class="card card-dark mt-3">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-terminal"></i> Logs del Sistema</h3>
+            </div>
+            <div class="card-body bg-black" style="height: 150px; overflow-y: auto; font-family: monospace; color: #00ff00; font-size: 0.9em;">
+                <div id="logConsole">
+                    <span class="text-muted">> Esperando órdenes...</span><br>
+                </div>
             </div>
         </div>
     </div>
 
     <div class="col-lg-6">
-        <div class="card card-dark">
+        <div class="card card-outline card-success">
             <div class="card-header">
-                <h3 class="card-title"><i class="fas fa-terminal"></i> Live Logs</h3>
-            </div>
-            <div class="card-body bg-black" style="height: 400px; overflow-y: auto; font-family: monospace; color: #00ff00;">
-                <div id="logConsole">
-                    <span class="text-muted">> Esperando comandos...</span><br>
+                <h3 class="card-title">Base de Datos de Leads</h3>
+                <div class="card-tools">
+                    <button type="button" class="btn btn-tool" onclick="loadLeads()">
+                        <i class="fas fa-sync-alt"></i> Recargar Tabla
+                    </button>
                 </div>
+            </div>
+            <div class="card-body table-responsive p-0" style="height: 400px;">
+                <table class="table table-head-fixed text-nowrap">
+                    <thead>
+                        <tr>
+                            <th>Usuario</th>
+                            <th>Estado</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leadsTableBody">
+                        <tr><td colspan="3" class="text-center text-muted">Cargando datos...</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -65,58 +140,139 @@
 
 {% block scripts %}
 <script>
-    // ID de la cuenta (En producción esto vendría dinámico desde Django)
     const ACCOUNT_ID = "{{ account_id }}"; 
 
-    function log(message) {
+    // --- UTILIDADES ---
+    function log(msg) {
         const consoleDiv = document.getElementById('logConsole');
-        const timestamp = new Date().toLocaleTimeString();
-        consoleDiv.innerHTML += `[${timestamp}] ${message}<br>`;
+        const time = new Date().toLocaleTimeString();
+        consoleDiv.innerHTML += `[${time}] ${msg}<br>`;
         consoleDiv.scrollTop = consoleDiv.scrollHeight;
     }
 
-    function startBot() {
+    function cleanUsername(input) {
+        if (input.includes('instagram.com/')) {
+            return input.split('instagram.com/')[1].split('/')[0].split('?')[0];
+        }
+        return input;
+    }
+
+    // --- 1. SCRAPING ---
+    function startScraping() {
+        let rawTarget = document.getElementById('targetUsername').value;
+        const amount = document.getElementById('scrapeAmount').value;
+
+        if(!rawTarget) return alert("Escribe un usuario objetivo");
+        const target = cleanUsername(rawTarget);
+        
+        log(`🕵️ Iniciando scraping en @${target} (${amount} leads)...`);
+        
+        fetch(`/api/account/${ACCOUNT_ID}/start-scraping/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+            body: JSON.stringify({ target_username: target, amount: amount })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.status) log(`✅ Tarea Scraping ID: ${data.task_id}`);
+            else log(`❌ Error: ${data.error || data.detail}`);
+        })
+        .catch(err => log(`❌ Error Red: ${err}`));
+    }
+
+    // --- 2. COMENTARIOS ---
+    function startCommentBot() {
         const url = document.getElementById('postUrl').value;
         const persona = document.getElementById('aiPersona').value;
         
-        // Recolectar checkboxes seleccionados
-        let selectedFocus = [];
-        document.querySelectorAll('.focus-check:checked').forEach((checkbox) => {
-            selectedFocus.push(checkbox.value);
-        });
+        if(!url) return alert("Falta URL");
+        log(`🚀 Iniciando comentario...`);
 
-        if (!url) {
-            alert("Por favor ingresa una URL");
-            return;
-        }
-
-        log("🚀 Enviando orden al servidor...");
-
-        // Petición a nuestra API
         fetch(`/api/account/${ACCOUNT_ID}/start-bot/`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token }}' // Django security
-            },
-            body: JSON.stringify({
-                post_url: url,
-                user_persona: persona,
-                focus_selection: selectedFocus
-            })
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+            body: JSON.stringify({ post_url: url, user_persona: persona })
         })
-        .then(response => response.json())
+        .then(res => res.json())
         .then(data => {
-            if(data.status) {
-                log(`✅ ÉXITO: Tarea iniciada ID: ${data.task_id}`);
-                log(`ℹ️ Config usada: ${persona.substring(0, 20)}...`);
-            } else {
-                log(`❌ ERROR: ${data.error}`);
-            }
+            if(data.status) log(`✅ Tarea Comentario ID: ${data.task_id}`);
+            else log(`❌ Error: ${data.error || data.detail}`);
         })
-        .catch(error => {
-            log(`❌ ERROR DE RED: ${error}`);
+        .catch(err => log(`❌ Error Red: ${err}`));
+    }
+
+    // --- 3. CARGAR LEADS Y BOTÓN DM ---
+    // --- 3. CARGAR LEADS Y BOTÓN DM ---
+    function loadLeads() {
+        fetch(`/api/account/${ACCOUNT_ID}/leads/`)
+        .then(res => {
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return res.json();
+        })
+        .then(data => {
+            const tbody = document.getElementById('leadsTableBody');
+            tbody.innerHTML = ''; 
+            
+            // Actualizar KPI
+            if(Array.isArray(data)) document.getElementById('kpi-leads').innerText = data.length;
+
+            if(!Array.isArray(data) || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="text-center">No hay leads. ¡Usa Minería!</td></tr>';
+                return;
+            }
+
+            data.forEach(lead => {
+                let badgeClass = lead.status === 'contacted' ? 'badge-success' : 'badge-warning';
+                
+                let actionHtml = '';
+                if(lead.status === 'to_contact') {
+                    // ✅ CORRECCIÓN AQUÍ: Agregué comillas simples '' alrededor de ${lead.id}
+                    actionHtml = `<button class="btn btn-sm btn-primary" onclick="sendDM('${lead.id}', '${lead.ig_username}')">
+                                    <i class="fas fa-paper-plane"></i> Enviar DM
+                                  </button>`;
+                } else {
+                    actionHtml = `<span class="text-muted"><i class="fas fa-check-double"></i> Enviado</span>`;
+                }
+
+                const row = `
+                    <tr>
+                        <td><b>@${lead.ig_username}</b></td>
+                        <td><span class="badge ${badgeClass}">${lead.status}</span></td>
+                        <td>${actionHtml}</td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+            log("🔄 Tabla actualizada.");
+        })
+        .catch(err => {
+            log(`❌ Error Leads: ${err.message}`);
+            document.getElementById('leadsTableBody').innerHTML = '<tr><td colspan="3" class="text-danger text-center">Error cargando datos</td></tr>';
         });
     }
+
+    // --- 4. ENVIAR DM (Acción del botón) ---
+    function sendDM(leadId, username) {
+        if(!confirm(`¿Seguro que quieres enviar DM a @${username}?`)) return;
+
+        log(`📨 Enviando DM a @${username}...`);
+        
+        fetch(`/api/account/${ACCOUNT_ID}/start-outreach/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+            body: JSON.stringify({ lead_id: leadId })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.status) {
+                log(`✅ Tarea Outreach encolada.`);
+                setTimeout(loadLeads, 2000); // Recargar tabla
+            } else {
+                log(`❌ Error: ${data.error || data.detail}`);
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', loadLeads);
 </script>
 {% endblock %}

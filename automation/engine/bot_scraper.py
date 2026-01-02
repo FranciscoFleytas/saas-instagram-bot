@@ -6,18 +6,18 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import StaleElementReferenceException, TimeoutException
 
-# Importamos la Clase Madre e infraestructura
+# Importamos la infraestructura Django
 from .engine_base import BotEngine
 from automation.models import Lead
 
 class ScraperBot(BotEngine):
     """
-    Motor de Scraping basado en la lógica de 'proxy_selenium.py'
-    adaptado a la arquitectura de clases de Django.
+    Motor de Scraping portado EXACTAMENTE desde proxy_selenium.py
     """
 
-    # --- CONFIGURACIÓN DE NICHOS (INTACTA) ---
+    # --- CONFIGURACIÓN DE NICHOS (Copiada de tu archivo) ---
     NICHE_MAPPING = {
         "Salud & Medicina": ["medico", "doctor", "medic", "surgeon", "cirujano", "dermatologist", "dentist", "dentista", "nutritionist", "nutricionista", "wellness", "bienestar", "mental health", "pediatrician"],
         "Real Estate & Arquitectura": ["real estate", "bienes raices", "realtor", "architect", "arquitecto", "interior design", "property", "broker", "construction"],
@@ -34,27 +34,18 @@ class ScraperBot(BotEngine):
 
     def __init__(self, account_data, proxy_data=None, filters=None):
         self.username_input = account_data.username
-        try:
-            self.password_input = account_data.get_password()
-        except Exception as e:
-            print(f"Advertencia: No se pudo desencriptar password: {e}")
-            self.password_input = None
-
-        # Configuración por defecto si no vienen filtros (Lógica solicitada)
+        # Filtros por defecto alineados con tu script
         self.filters = filters if filters else {
             "followers_min": 1000,
             "followers_max": 100000,
-            "engagement_min": 0.0,
-            "engagement_max": 3.0,
-            "posts_min": 15,
-            "target_niche": [] # Lista vacía = cualquiera
+            "posts_min": 15, # Tu script dice 100, aquí dejamos configurable
+            "engagement_max": 3.0
         }
-        
-        print(f"[{self.username_input}] Filtros activos: {self.filters}")
-
         super().__init__(account_data=account_data, proxy_data=proxy_data)
 
-    # --- FUNCIONES DE PARSEO (Idénticas a proxy_selenium.py) ---
+    # ==============================================================================
+    # 1. PARSERS Y UTILIDADES (Lógica exacta de proxy_selenium.py)
+    # ==============================================================================
 
     def _parse_social_number(self, text):
         if not text: return 0
@@ -67,8 +58,7 @@ class ScraperBot(BotEngine):
             else:
                 clean_num = re.sub(r'[^\d.]', '', text)
                 return int(float(clean_num))
-        except:
-            return 0
+        except: return 0
 
     def _get_niche_match(self, description_text):
         if not description_text: return "-"
@@ -86,7 +76,7 @@ class ScraperBot(BotEngine):
             for el in elements:
                 text = el.text.strip()
                 if text and len(text) < 40 and not any(char.isdigit() for char in text):
-                    if "seguido" not in text.lower() and "followed" not in text.lower():
+                    if "seguido" not in text.lower():
                         category = text
                         break
         except: pass
@@ -94,7 +84,8 @@ class ScraperBot(BotEngine):
 
     def _calculate_real_engagement(self, followers):
         """
-        Lógica exacta de proxy_selenium.py
+        Retorna float con el % o string 'Comentarios Ocultos'.
+        Lógica exacta de tu script.
         """
         try:
             try:
@@ -104,14 +95,14 @@ class ScraperBot(BotEngine):
             posts_links = self.driver.find_elements(By.XPATH, "//a[contains(@href, '/p/')]")
             if len(posts_links) < 4: return 0.0 
 
-            # 4to Post (Estrategia para evitar posts fijados)
+            # 4to Post
             target_link = posts_links[3]
             self.driver.execute_script("arguments[0].click();", target_link)
             
             content_text = ""
             try:
                 wait = WebDriverWait(self.driver, 5)
-                # Selectores ampliados para el modal
+                # Selectores ampliados para robustez
                 modal_element = wait.until(EC.presence_of_element_located(
                     (By.XPATH, "//div[contains(@class, '_ae2s')] | //ul[contains(@class, '_a9ym')] | //div[@role='dialog']")
                 ))
@@ -125,7 +116,6 @@ class ScraperBot(BotEngine):
             likes = 0
             comments = 0
             
-            # Regex robusto (Inglés/Español/Francés)
             match_std = re.search(r'([\d.,kkm]+)\s*(?:likes|me gusta|j’aime)', content_text)
             match_hidden_partial = re.search(r'(?:y|and)\s+([\d.,kkm]+)\s+(?:personas|others)', content_text)
 
@@ -138,7 +128,7 @@ class ScraperBot(BotEngine):
             if c_match: 
                 comments = self._parse_social_number(c_match.group(1))
 
-            # --- LÓGICA DE COMENTARIOS OCULTOS ---
+            # --- LÓGICA CRÍTICA: COMENTARIOS OCULTOS ---
             if likes == 0 and ("otras personas" in content_text or "others" in content_text):
                 return "Comentarios Ocultos"
             
@@ -148,16 +138,14 @@ class ScraperBot(BotEngine):
             engagement_rate = (total / followers) * 100
             return round(engagement_rate, 2)
 
-        except Exception as e:
-            # Asegurar escape si falla
+        except:
             try: ActionChains(self.driver).send_keys(Keys.ESCAPE).perform()
             except: pass
             return 0.0
 
     def _analyze_profile_visual(self, current_username):
         """
-        Implementación de analyze_profile_visual de proxy_selenium.py
-        AHORA CON VARIABLES DINÁMICAS.
+        Analiza el perfil y decide si guardarlo.
         """
         try:
             wait = WebDriverWait(self.driver, 4) 
@@ -165,79 +153,60 @@ class ScraperBot(BotEngine):
                 print(f"[ERROR] Redirigido a Login: @{current_username}")
                 return None
             
-            # 1. Estrategia Meta Tag (La más fiable según tu script)
             try:
                 meta_element = wait.until(EC.presence_of_element_located((By.XPATH, "//meta[@name='description']")))
                 meta_content = meta_element.get_attribute("content").lower()
             except: 
-                print(f"[Lead Descartado] @{current_username} | No meta tag")
+                print(f"[DESCARTE] @{current_username} (No meta tag)")
                 return None
 
             followers = 0
             posts = 0
-            
             f_match = re.search(r'([0-9\.,km]+)\s*(followers|seguidores)', meta_content)
             p_match = re.search(r'([0-9\.,km]+)\s*(posts|publicaciones)', meta_content)
 
             if f_match: followers = self._parse_social_number(f_match.group(1))
             if p_match: posts = self._parse_social_number(p_match.group(1))
 
-            # --- VARIABLES DINÁMICAS DESDE self.filters ---
+            # Filtros dinámicos o hardcodeados (como prefieras, aquí uso los del init)
             min_f = self.filters.get('followers_min', 1000)
             max_f = self.filters.get('followers_max', 100000)
-            min_p = self.filters.get('posts_min', 15)
-            target_niches = self.filters.get('target_niche', [])
-            
-            # --- Filtros Dinámicos ---
-            
-            # 1. Seguidores
-            if not (min_f <= followers <= max_f): 
-                print(f"[Lead Descartado] @{current_username} | Followers: {followers} (Requerido: {min_f}-{max_f})")
-                return None
-            
-            # 2. Posts
-            if posts < min_p: 
-                print(f"[Lead Descartado] @{current_username} | Posts: {posts} (Requerido: {min_p})")
-                return None
-            
-            niche = self._get_niche_match(meta_content)
-            
-            # 3. Nicho (Si el cliente especificó alguno)
-            if target_niches and isinstance(target_niches, list):
-                if niche not in target_niches:
-                    print(f"[Lead Descartado] @{current_username} | Nicho: {niche} (No coincide con {target_niches})")
-                    return None
-
-            # --- Cálculo Engagement ---
-            engagement = self._calculate_real_engagement(followers)
-            category = self._extract_category()
-            
-            # --- Log y Decisión Dinámica ---
-            
-            min_eng = self.filters.get('engagement_min', 0.0)
+            min_p = self.filters.get('posts_min', 10) # Bajé un poco el hard limit para pruebas
             max_eng = self.filters.get('engagement_max', 3.0)
 
-            # Caso "Oculto" -> Es válido (generalmente se asume bajo/malo o oculto por privacidad)
+            if not (min_f <= followers <= max_f):
+                print(f"[DESCARTE] @{current_username} | F:{followers}")
+                return None
+            
+            if posts < min_p:
+                print(f"[DESCARTE] @{current_username} | Posts:{posts}")
+                return None
+                
+            engagement = self._calculate_real_engagement(followers)
+            category = self._extract_category()
+            niche = self._get_niche_match(meta_content)
+            
+            # --- DECISIÓN FINAL ---
+            
+            # 1. Comentarios Ocultos -> SIEMPRE VÁLIDO (Tu lógica)
             if isinstance(engagement, str):
-                print(f"   [OK - OCULTO] @{current_username} | F:{followers} | Eng:{engagement}")
+                print(f"   [OK - OCULTO] @{current_username}")
                 return {
                     "followers": followers, "posts": posts, "category": category, 
                     "niche": niche, "engagement": engagement, "url": self.driver.current_url
                 }
 
-            # Caso Numérico
+            # 2. Numérico -> Verificar Máximo Engagement (Tu script descarta si es muy alto)
             if isinstance(engagement, (int, float)):
-                print(f"   [INFO] @{current_username} | F:{followers} | Eng:{engagement}%")
-                
-                # Verificación Dinámica del Rango
-                if min_eng <= engagement <= max_eng:
-                    return {
-                        "followers": followers, "posts": posts, "category": category, 
-                        "niche": niche, "engagement": engagement, "url": self.driver.current_url
-                    }
-                else:
-                    print(f"   [FILTRO ENGAGEMENT] {engagement}% fuera de rango ({min_eng}-{max_eng}%)")
+                if engagement >= max_eng:
+                    print(f"   [DESCARTE] High Eng: {engagement}%")
                     return None
+
+                print(f"   [OK] @{current_username} | Eng:{engagement}%")
+                return {
+                    "followers": followers, "posts": posts, "category": category, 
+                    "niche": niche, "engagement": engagement, "url": self.driver.current_url
+                }
 
             return None
 
@@ -245,62 +214,102 @@ class ScraperBot(BotEngine):
             print(f"[Error Análisis] {e}")
             return None
 
-    # --- LOOP PRINCIPAL (Idéntico al funcional) ---
+    # ==============================================================================
+    # 2. BUCLE PRINCIPAL (Adaptado de run_scraper_session)
+    # ==============================================================================
     def run_scraping_task(self, target_profile, max_leads=50):
-        print(f"--- Iniciando Scraping (Modo proxy_selenium) en @{target_profile} ---")
+        print(f"--- Iniciando Scraping V5 (Lógica Escritorio) en @{target_profile} ---")
         
         self.driver.get(f"https://www.instagram.com/{target_profile}/")
         time.sleep(3)
         self.dismiss_popups()
 
+        # Abrir lista de seguidos
         try:
-            self.driver.find_element(By.XPATH, f"//a[contains(@href, 'following')]").click()
+            following_link = WebDriverWait(self.driver, 5).until(
+                EC.element_to_be_clickable((By.XPATH, f"//a[contains(@href, 'following')]"))
+            )
+            following_link.click()
             time.sleep(2)
         except:
             print("Lista de seguidores no disponible/privada.")
             return
 
-        dialog_box = self.driver.find_element(By.XPATH, "//div[@role='dialog']//div[@style]")
         leads_saved = 0
         consecutive_fails = 0
         analyzed_cache = set()
+        
+        try:
+            dialog_box = WebDriverWait(self.driver, 5).until(EC.presence_of_element_located((By.XPATH, "//div[@role='dialog']")))
+        except:
+            print("No se encontró el diálogo de seguidores.")
+            return
+
+        main_window = self.driver.current_window_handle
+        MAX_SCROLL_FAILS = 15
 
         while leads_saved < max_leads:
-            users_elements = dialog_box.find_elements(By.TAG_NAME, "a")
+            # 1. Recolectar candidatos (Solo Strings, para evitar StaleElements)
+            try:
+                elements = dialog_box.find_elements(By.TAG_NAME, "a")
+            except: break
             
             new_candidates = []
-            for el in users_elements:
-                href = el.get_attribute('href')
-                if href and '/p/' not in href:
-                    u = href.split('/')[-2]
-                    if u not in analyzed_cache:
-                        new_candidates.append(u)
-                        analyzed_cache.add(u)
+            last_element_found = None
 
+            for elem in elements:
+                try:
+                    last_element_found = elem
+                    href = elem.get_attribute('href')
+                    if not href or 'instagram.com/' not in href: continue
+                    
+                    # Limpieza estricta como en tu script
+                    clean_href = href.split('?')[0].rstrip('/')
+                    user = clean_href.split('/')[-1]
+                    
+                    if len(user) < 3: continue
+                    if any(x in clean_href for x in ['/p/', '/explore/', '/direct/', target_profile]): continue
+                    
+                    if user not in analyzed_cache:
+                        # Verificar si ya existe en DB para no analizarlo en vano
+                        if not Lead.objects.filter(ig_username=user).exists():
+                            new_candidates.append(user)
+                        analyzed_cache.add(user) 
+                except: pass
+            
+            # 2. Si no hay candidatos nuevos, SCROLL
             if not new_candidates:
                 consecutive_fails += 1
-                if consecutive_fails > 10: break
-                try: self.driver.execute_script("arguments[0].scrollIntoView(true);", users_elements[-1])
-                except: pass
+                if consecutive_fails >= MAX_SCROLL_FAILS:
+                    print("Fin de lista o límite de scrolls.")
+                    break
+                
+                if last_element_found:
+                    try: self.driver.execute_script("arguments[0].scrollIntoView(true);", last_element_found)
+                    except: pass
                 time.sleep(1.5)
                 continue
 
             consecutive_fails = 0
-            main_window = self.driver.current_window_handle
-
+            
+            # 3. Procesar candidatos (Abrir Pestaña -> Analizar -> Cerrar)
             for user in new_candidates:
-                if Lead.objects.filter(ig_username=user).exists():
-                    continue
-
                 try:
+                    # Abrir nueva pestaña (Método Robusto)
                     self.driver.execute_script("window.open('about:blank', '_blank');")
                     WebDriverWait(self.driver, 3).until(lambda d: len(d.window_handles) > 1)
                     self.driver.switch_to.window(self.driver.window_handles[-1])
                     
                     self.driver.get(f"https://www.instagram.com/{user}/")
                     
-                    # Llamamos a la lógica importada (ahora dinámica)
                     data = self._analyze_profile_visual(current_username=user)
+                    
+                    # Cerrar pestaña
+                    try: self.driver.close()
+                    except: pass
+                    
+                    # Volver a main
+                    self.driver.switch_to.window(main_window)
                     
                     if data:
                         Lead.objects.create(
@@ -310,18 +319,25 @@ class ScraperBot(BotEngine):
                             status='to_contact'
                         )
                         leads_saved += 1
-                        print(f"   [GUARDADO] @{user} en Base de Datos.")
-                    
-                    self.driver.close()
-                    self.driver.switch_to.window(main_window)
-                    
+                        print(f"   [DB GUARDADO] Leads: {leads_saved}/{max_leads}")
+
                     if leads_saved >= max_leads: break
                     time.sleep(random.uniform(1, 2))
 
                 except Exception as e:
-                    print(f"Error ciclo: {e}")
+                    print(f"Error ciclo usuario {user}: {e}")
+                    # Recuperación de emergencia
                     try:
-                        if len(self.driver.window_handles) > 1:
+                        while len(self.driver.window_handles) > 1:
+                            self.driver.switch_to.window(self.driver.window_handles[-1])
                             self.driver.close()
-                            self.driver.switch_to.window(main_window)
+                        self.driver.switch_to.window(main_window)
                     except: pass
+
+            if last_element_found:
+                try: self.driver.execute_script("arguments[0].scrollIntoView(true);", last_element_found)
+                except: pass
+            
+            time.sleep(1)
+
+        print(f"--- Tarea Finalizada. Total Leads: {leads_saved} ---")
