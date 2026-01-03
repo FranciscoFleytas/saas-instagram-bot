@@ -34,6 +34,7 @@ class IGAccount(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     agency = models.ForeignKey(Agency, on_delete=models.CASCADE)
     username = models.CharField(max_length=100, unique=True)
+    last_used = models.DateTimeField(null=True, blank=True, help_text="Marca de tiempo para calcular enfriamiento")
     
     # Almacenamos la contraseña encriptada como bytes o string base64
     password_encrypted = models.BinaryField() 
@@ -82,3 +83,17 @@ class Lead(models.Model):
     # CRM Status
     status = models.CharField(max_length=50, default='to_contact') # to_contact, contacted, interested
     created_at = models.DateTimeField(auto_now_add=True)
+
+class SystemLog(models.Model):
+    LEVEL_CHOICES = [
+        ('info', 'INFO'),
+        ('warn', 'WARNING'),
+        ('error', 'ERROR'),
+        ('success', 'SUCCESS'),
+    ]
+    level = models.CharField(max_length=10, choices=LEVEL_CHOICES, default='info')
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"[{self.level.upper()}] {self.message}"

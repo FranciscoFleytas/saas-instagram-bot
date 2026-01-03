@@ -1,4 +1,5 @@
 from django.urls import path
+from .views import get_system_logs # <--- Importar
 from .views import (
     dashboard_view, AccountConfigView, 
     trigger_bot_interaction, trigger_bot_scraping, trigger_bot_outreach,
@@ -18,4 +19,5 @@ urlpatterns = [
 
     # Data (Tablas)
     path('api/account/<uuid:pk>/leads/', LeadListView.as_view(), name='list-leads'),
+    path('api/logs/', get_system_logs, name='api_logs')
 ]
