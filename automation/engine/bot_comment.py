@@ -8,6 +8,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import StaleElementReferenceException, TimeoutException
 from selenium.webdriver.common.action_chains import ActionChains
+from django.conf import settings
 
 # Importamos la Clase Madre
 from .engine_base import BotEngine
@@ -21,7 +22,7 @@ class CommentBot(BotEngine):
         super().__init__(account_data, proxy_data)
         
         # API Key de Gemini
-        genai.configure(api_key="AIzaSyCAn6MmtSo9mkVzWOcO0KOdcnRD9U7KB-g") 
+        genai.configure(api_key=settings.GEMINI_API_KEY) 
         self.model = genai.GenerativeModel('gemini-2.5-flash')
 
     # ==============================================================================

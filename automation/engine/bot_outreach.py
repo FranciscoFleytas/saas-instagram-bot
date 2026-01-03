@@ -20,7 +20,7 @@ class OutreachBot(BotEngine):
     def __init__(self, account_data, proxy_data=None):
         # 1. Configuración de Gemini (Idealmente mover API KEY a settings.py)
         # Nota: Usamos la KEY que estaba en tu script funcional
-        genai.configure(api_key="AIzaSyCAn6MmtSo9mkVzWOcO0KOdcnRD9U7KB-g") 
+        genai.configure(api_key=settings.GEMINI_API_KEY) 
         self.model = genai.GenerativeModel('gemini-2.5-flash')
         
         # 2. Inicializar Motor Base (Selenium + Proxy)

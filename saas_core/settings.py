@@ -118,3 +118,9 @@ CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:63
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'America/Argentina/Buenos_Aires'
+
+# API KEYS y SECRETS
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+NOTION_TOKEN = os.getenv('NOTION_TOKEN')
+NOTION_DB_ID = os.getenv('NOTION_DB_ID')
+ENCRYPTION_KEY = os.getenv('ENCRYPTION_KEY', '4-RTmVOTmyLdiAuIDTs4vCziukyeexXLhrPRXNHuI9_c=').encode()
