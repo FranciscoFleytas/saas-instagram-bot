@@ -2,7 +2,7 @@ from celery import shared_task
 from django.utils import timezone
 import logging
 import random
-import google.generativeai as genai  # <--- IMPORTANTE: Para la IA
+import google.generativeai as genai
 from datetime import timedelta
 import time
 
@@ -13,11 +13,12 @@ from automation.models import IGAccount, Lead, Agency
 from automation.engine.bot_scraper import ScraperBot
 from automation.engine.bot_outreach import OutreachBot
 from automation.engine.bot_comment import CommentBot
+# IMPORTANTE: Importamos el nuevo motor rápido
+from automation.engine.bot_scraper_fast import FastScraperBot
 
-# Configuración de Logging y API Key de Gemini
+# Configuración
 logger = logging.getLogger(__name__)
-# Nota: Idealmente mover esta KEY a settings.py o .env
-GENAI_API_KEY = "AIzaSyBNb446tcr2Ol80gmrz0_5ue9M_uO451CA"
+GENAI_API_KEY = "AIzaSyBNb446tcr2Ol80gmrz0_5ue9M_uO451CA" # Tu API Key
 
 # ==============================================================================
 # UTILIDADES
@@ -34,7 +35,7 @@ def get_proxy_dict(account):
 
 def generate_api_comment(user_prompt, user_persona):
     """
-    Genera un comentario usando Gemini para el Modo API (sin navegador).
+    Genera un comentario usando Gemini para el Modo API.
     """
     try:
         genai.configure(api_key=GENAI_API_KEY)
@@ -48,70 +49,97 @@ def generate_api_comment(user_prompt, user_persona):
         TASK: Write a SHORT Instagram comment (max 1 sentence).
         {persona_str}
         {instruction}
-        
-        CONSTRAINTS:
-        1. Natural language.
-        2. NO hashtags.
-        3. Match the language of the instruction (if Spanish, write in Spanish).
+        CONSTRAINTS: Natural language, NO hashtags, match language.
         """
         
         response = model.generate_content(prompt)
         return response.text.strip().replace('"', '')
     except Exception as e:
         logger.error(f"[AI ERROR] Falló generación: {e}")
-        return "Great post! 🔥" # Fallback seguro
+        return "Great post! 🔥"
 
 # ==============================================================================
-# TAREA 1: SCRAPING (Con Rotación de Pool)
+# TAREA 1: SCRAPING HÍBRIDO (API + SELENIUM)
 # ==============================================================================
 @shared_task(bind=True)
-def task_run_scraping(self, account_id, target_username, max_leads=50):
-    bot = None
+def task_run_scraping(self, account_id, target_username, max_leads=50, use_fast_mode=False):
+    """
+    Orquestador de Scraping. Soporta 'use_fast_mode' para usar el Enjambre.
+    """
+    mode_str = "⚡ API (ENJAMBRE)" if use_fast_mode else "🐢 VISUAL (SELENIUM)"
+    logger.info(f"[TASK SCRAPE] Modo: {mode_str} | Objetivo: @{target_username}")
+    
     try:
-        logger.info(f"[TASK SCRAPE] Orden recibida de Cuenta ID: {account_id}")
         client_account = IGAccount.objects.get(id=account_id)
-        
-        # --- ROTACIÓN DE POOL (Protección de Cuenta) ---
-        account_to_use = client_account
+    except IGAccount.DoesNotExist:
+        return "ERROR_CLIENT_ACCOUNT_NOT_FOUND"
+
+    max_retries = 3
+    
+    for attempt in range(1, max_retries + 1):
         try:
-            pool_agency = Agency.objects.filter(name="Imported Scrapers Pool").first()
-            if pool_agency:
-                # Elegir scraper aleatorio
-                random_scraper = IGAccount.objects.filter(agency=pool_agency, status='active').order_by('?').first()
-                if random_scraper:
-                    logger.info(f"[POOL] 🛡️ Usando Scraper: {random_scraper.username}")
-                    account_to_use = random_scraper
-        except Exception as e:
-            logger.error(f"[POOL ERROR] {e}")
+            # 1. SELECCIÓN DE CUENTA (Pool de Rotación)
+            account_to_use = client_account
+            try:
+                pool_agency = Agency.objects.filter(name="Imported Scrapers Pool").first()
+                if pool_agency:
+                    # Elegir scraper aleatorio
+                    random_scraper = IGAccount.objects.filter(agency=pool_agency, status='active').order_by('?').first()
+                    if random_scraper:
+                        account_to_use = random_scraper
+                        logger.info(f"[INTENTO {attempt}] 🛡️ Usando identidad: {account_to_use.username}")
+            except Exception as e:
+                logger.error(f"[POOL ERROR] {e}")
 
-        # Ejecución
-        proxy_data = get_proxy_dict(account_to_use)
-        bot = ScraperBot(account_data=account_to_use, proxy_data=proxy_data, filters=client_account.config.get('filters'))
-        
-        start_time = timezone.now()
-        bot.run_scraping_task(target_profile=target_username, max_leads=max_leads)
-        
-        # Procesamiento de Leads
-        new_leads = Lead.objects.filter(source_account=target_username, created_at__gte=start_time, status='to_contact')
-        count = new_leads.count()
-        
-        # Automation Check
-        if client_account.config.get('automation', {}).get('enable_autodm', False) and count > 0:
-            current_delay = 10
-            for lead in new_leads:
-                current_delay += random.randint(15, 45)
-                task_run_outreach.apply_async(args=[account_id, lead.id], countdown=current_delay * 60)
-            return f"SUCCESS_PREMIUM: {count} leads mined & queued"
+            proxy_data = get_proxy_dict(account_to_use)
+            start_time = timezone.now()
             
-        return f"SUCCESS: {count} leads mined"
+            # 2. EJECUCIÓN SEGÚN MODO
+            if use_fast_mode:
+                # --- MODO RÁPIDO (API) ---
+                bot = FastScraperBot(account_to_use, proxy_data)
+                
+                # Login inteligente (Cookie -> Pass)
+                if not bot.login():
+                    raise Exception("Fallo Login API")
+                
+                # Ejecutar extracción
+                msg = bot.run(target_username, max_leads)
+                logger.info(f"[API RESULT] {msg}")
 
-    except Exception as e:
-        logger.error(f"[TASK ERROR] {e}")
-        return f"ERROR: {e}"
-    finally:
-        if bot: 
-            try: bot.quit()
-            except: pass
+            else:
+                # --- MODO VISUAL (Selenium) ---
+                user_filters = client_account.config.get('filters', None)
+                bot = ScraperBot(account_to_use, proxy_data, filters=user_filters)
+                bot.run_scraping_task(target_profile=target_username, max_leads=max_leads)
+                if hasattr(bot, 'quit'): bot.quit()
+
+            # 3. VERIFICACIÓN Y PREMIUM
+            new_leads = Lead.objects.filter(source_account=target_username, created_at__gte=start_time, status='to_contact')
+            count = new_leads.count()
+            
+            if count > 0:
+                logger.info(f"[EXITO] {count} leads recolectados.")
+                
+                # Auto-DM Check
+                if client_account.config.get('automation', {}).get('enable_autodm', False):
+                    for lead in new_leads:
+                        current_delay = random.randint(20, 60)
+                        task_run_outreach.apply_async(args=[account_id, lead.id], countdown=current_delay * 60)
+                    return f"SUCCESS_PREMIUM: {count} leads"
+                
+                return f"SUCCESS: {count} leads"
+            else:
+                if use_fast_mode: raise Exception("Cero leads en modo API (Posible bloqueo o target privado)")
+                return "SUCCESS: 0 leads (Check filters)"
+
+        except Exception as e:
+            logger.error(f"[INTENTO {attempt} FALLIDO] {e}")
+            if attempt == max_retries: return f"ERROR_FINAL: {e}"
+            time.sleep(5)
+            continue
+            
+    return "ERROR_UNKNOWN"
 
 # ==============================================================================
 # TAREA 2: OUTREACH
@@ -141,7 +169,7 @@ def task_run_outreach(self, account_id, lead_id):
             except: pass
 
 # ==============================================================================
-# TAREA 3: ENGAGEMENT (CEREBRO HÍBRIDO + IA)
+# TAREA 3: ENGAGEMENT (MODO ENJAMBRE / SWARM) - COMPLETA
 # ==============================================================================
 @shared_task(bind=True)
 def task_run_comment(self, account_id, post_url, do_like=True, do_save=False, do_comment=True, 
@@ -155,29 +183,26 @@ def task_run_comment(self, account_id, post_url, do_like=True, do_save=False, do
             # 1. Obtener TODAS las cuentas activas del Pool
             try:
                 pool_agency = Agency.objects.get(name="Imported Scrapers Pool")
-                # CAMBIO CLAVE: Usamos .all() en lugar de .order_by('?').first()
                 farm_accounts = IGAccount.objects.filter(agency=pool_agency, status='active')
                 
                 if not farm_accounts.exists():
                     return "ERROR_NO_FARM_ACCOUNTS"
                 
-                logger.info(f"[SWARM] Se detectaron {farm_accounts.count()} cuentas listas para el ataque.")
+                logger.info(f"[SWARM] Se detectaron {farm_accounts.count()} cuentas listas.")
 
             except Agency.DoesNotExist:
                 return "ERROR_NO_POOL_AGENCY"
 
-            # 2. Bucle de Ejecución (Una por una)
             success_count = 0
             fail_count = 0
             
-            # Importar motor API
             from automation.engine.bot_fast_interaction import FastInteractionBot
 
+            # BUCLE DE ATAQUE (Una por una)
             for farm_acc in farm_accounts:
                 try:
                     logger.info(f"[SWARM] ➡️ Turno de: {farm_acc.username}")
                     
-                    # A. Login
                     proxy_data = get_proxy_dict(farm_acc)
                     bot = FastInteractionBot(farm_acc, proxy_data)
                     
@@ -186,25 +211,22 @@ def task_run_comment(self, account_id, post_url, do_like=True, do_save=False, do
                         fail_count += 1
                         continue
 
-                    # B. Generar Comentario ÚNICO (Para que no digan todos lo mismo)
+                    # Generar Comentario ÚNICO
                     comment_text = None
                     if do_comment:
-                        # Generamos una variación nueva cada vez
                         comment_text = generate_api_comment(user_prompt, user_persona)
-                        # Pequeña pausa para no saturar la API de Gemini
-                        time.sleep(1)
+                        time.sleep(1) # Pausa para Gemini
 
-                    # C. Ejecutar Acción
+                    # Ejecutar Acción
                     if bot.execute(post_url, do_like, do_comment, comment_text):
                         success_count += 1
                         logger.info(f"   ✅ {farm_acc.username} completó la misión.")
                     else:
                         fail_count += 1
                     
-                    # D. Pausa entre bots (Para que Instagram no detecte tráfico simultáneo exacto)
-                    # Espera entre 5 y 10 segundos entre cada cuenta
+                    # Pausa humana
                     delay = random.randint(5, 10)
-                    logger.info(f"   ⏸️ Esperando {delay}s para el siguiente bot...")
+                    logger.info(f"   ⏸️ Esperando {delay}s...")
                     time.sleep(delay)
 
                 except Exception as inner_e:
@@ -213,7 +235,7 @@ def task_run_comment(self, account_id, post_url, do_like=True, do_save=False, do
 
             return f"SWARM_REPORT: ✅ {success_count} Exitosos | ❌ {fail_count} Fallidos"
 
-        # --- CAMINO B: MODO VISUAL (Selenium - Solo 1 cuenta) ---
+        # --- CAMINO B: MODO VISUAL (Selenium) ---
         else:
             logger.info(f"[TASK] Usando MODO VISUAL (Selenium) para {post_url}")
             client_account = IGAccount.objects.get(id=account_id)

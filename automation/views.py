@@ -20,16 +20,11 @@ class AccountConfigView(generics.RetrieveUpdateAPIView):
     lookup_field = 'id'
 
 class LeadListView(generics.ListAPIView):
-    """
-    Lista los últimos 50 leads para el dashboard
-    """
     serializer_class = LeadSerializer
-
     def get_queryset(self):
-        # Hotfix: Traer todos para evitar error de filtro por ahora
         return Lead.objects.all().order_by('-created_at')[:50]
 
-# 3. API: TRIGGER COMENTARIOS (Actualizado para Checkboxes)
+# 3. API: TRIGGER COMENTARIOS
 @api_view(['POST'])
 def trigger_bot_interaction(request, pk):
     try:
@@ -39,14 +34,12 @@ def trigger_bot_interaction(request, pk):
         user_prompt = request.data.get('user_prompt')
         use_fast_mode = request.data.get('use_fast_mode', False)
         
-        # Leemos las opciones del Dashboard (por defecto True si no llegan)
         do_like = request.data.get('do_like', True)
         do_comment = request.data.get('do_comment', True)
         do_save = request.data.get('do_save', False)
         
         if not post_url: return Response({"error": "Falta post_url"}, status=400)
 
-        # Pasamos todas las opciones a la tarea
         task_id = task_run_comment.delay(
             account_id=str(account.id), 
             post_url=post_url, 
@@ -61,22 +54,27 @@ def trigger_bot_interaction(request, pk):
     except IGAccount.DoesNotExist: 
         return Response({"error": "Cuenta no encontrada"}, status=404)
     except Exception as e:
-        print(f"ERROR CRÍTICO EN VIEW: {e}") # Verás esto en la terminal negra
         return Response({"error": str(e)}, status=500)
 
-# --- TRIGGER SCRAPING ---
+# --- TRIGGER SCRAPING (CORREGIDO) ---
 @api_view(['POST'])
 def trigger_bot_scraping(request, pk):
     try:
         target_username = request.data.get('target_username')
         amount = int(request.data.get('amount', 10))
         
+        # --- AQUÍ ESTÁ EL CAMBIO ---
+        # Capturamos el parámetro del frontend
+        use_fast_mode = request.data.get('use_fast_mode', False) 
+        
         if not target_username: return Response({"error": "Falta target_username"}, status=400)
 
+        # Se lo pasamos a la tarea
         task_id = task_run_scraping.delay(
             account_id=str(pk),
             target_username=target_username,
-            max_leads=amount
+            max_leads=amount,
+            use_fast_mode=use_fast_mode # <--- ¡Conectado!
         )
         return Response({"status": "Scraping iniciado", "task_id": str(task_id)})
     except Exception as e: return Response({"error": str(e)}, status=500)

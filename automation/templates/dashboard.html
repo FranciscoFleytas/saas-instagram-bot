@@ -228,16 +228,23 @@
     function startScraping() {
         let rawTarget = document.getElementById('targetUsername').value;
         const amount = document.getElementById('scrapeAmount').value;
+        // NUEVO: Capturamos el checkbox
+        const useFastMode = document.getElementById('scrapingFastMode').checked;
 
         if(!rawTarget) return alert("Escribe un usuario objetivo");
         const target = cleanUsername(rawTarget);
         
-        log(`Iniciando scraping en @${target} (${amount} leads)...`);
+        const modeLabel = useFastMode ? "⚡ API Rápida" : "🐢 Visual (Selenium)";
+        log(`Iniciando scraping en @${target} (${amount} leads) vía ${modeLabel}...`);
         
         fetch(`/api/account/${ACCOUNT_ID}/start-scraping/`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-            body: JSON.stringify({ target_username: target, amount: amount })
+            body: JSON.stringify({ 
+                target_username: target, 
+                amount: amount,
+                use_fast_mode: useFastMode // Enviamos el parámetro al Backend
+            })
         })
         .then(res => res.json())
         .then(data => {
