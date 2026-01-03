@@ -1,91 +1,275 @@
-{% extends 'base.html' %}
-
-{% block content %}
-<div class="max-w-4xl mx-auto">
-    <div class="mb-8 text-center">
-        <h1 class="text-3xl font-bold text-gray-900">Audience Extraction</h1>
-        <p class="text-gray-500 mt-2">Target specific followers or hashtags to build your dataset.</p>
-    </div>
-
-    <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-        <div class="grid grid-cols-1 md:grid-cols-2">
-            
-            <div class="p-8 bg-gray-50 border-r border-gray-100">
-                <h3 class="text-lg font-bold text-gray-900 mb-6">Data Source</h3>
-                
-                <div class="space-y-4">
-                    <label class="flex items-center p-4 bg-white border border-blue-200 rounded-xl cursor-pointer shadow-sm ring-2 ring-blue-500 ring-offset-2">
-                        <input type="radio" name="source" class="h-4 w-4 text-primary focus:ring-primary border-gray-300" checked>
-                        <div class="ml-3">
-                            <span class="block text-sm font-medium text-gray-900">Database Search</span>
-                            <span class="block text-xs text-gray-500">Find accounts inside our cached DB</span>
-                        </div>
-                    </label>
-
-                    <label class="flex items-center p-4 bg-white border border-gray-200 rounded-xl cursor-pointer shadow-sm hover:bg-gray-50">
-                        <input type="radio" name="source" class="h-4 w-4 text-primary focus:ring-primary border-gray-300">
-                        <div class="ml-3">
-                            <span class="block text-sm font-medium text-gray-900">Manual URL Import</span>
-                            <span class="block text-xs text-gray-500">Paste an Instagram profile URL</span>
-                        </div>
-                    </label>
-                </div>
-
-                <div class="mt-8">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Search Target</label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <i class="ri-at-line text-gray-400"></i>
-                        </div>
-                        <input type="text" class="block w-full pl-10 border-gray-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary p-3" placeholder="competitor_username">
-                    </div>
-                </div>
-            </div>
-
-            <div class="p-8">
-                <h3 class="text-lg font-bold text-gray-900 mb-6">Extraction Settings</h3>
-                
-                <div class="space-y-6">
-                    <div>
-                        <div class="flex justify-between mb-2">
-                            <label class="text-sm font-medium text-gray-700">Extraction Quantity</label>
-                            <span class="text-sm font-bold text-primary" id="rangeValue">1,000</span>
-                        </div>
-                        <input type="range" min="100" max="5000" step="100" value="1000" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600" oninput="document.getElementById('rangeValue').innerText = Number(this.value).toLocaleString()">
-                        <div class="flex justify-between text-xs text-gray-400 mt-1">
-                            <span>100</span>
-                            <span>5,000 (Max)</span>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Optional Filters</label>
-                        <input type="text" placeholder="Filter by Name/Bio Keyword" class="block w-full border-gray-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary sm:text-sm p-2 border">
-                    </div>
-
-                    <div class="flex items-center justify-between py-4 border-t border-gray-100">
-                        <div>
-                            <span class="block text-sm font-medium text-gray-900">Fast Mode (API)</span>
-                            <span class="block text-xs text-gray-500">Uses higher API limits, faster results.</span>
-                        </div>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" value="" class="sr-only peer">
-                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                        </label>
-                    </div>
-
-                    <button class="w-full bg-primary hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-blue-500/30 transition transform hover:-translate-y-0.5 flex justify-center items-center">
-                        <i class="ri-download-cloud-2-line mr-2 text-xl"></i> Extract Lead Data
-                    </button>
-                </div>
-            </div>
-        </div>
-        
-        <div class="bg-gray-50 p-4 border-t border-gray-100 text-center">
-            <p class="text-xs text-gray-500 flex justify-center items-center">
-                <i class="ri-shield-check-line mr-1 text-green-500"></i> Data is processed securely and compliant with platform policies.
-            </p>
-        </div>
-    </div>
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Audience Extraction - SaaS Bot</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#3B82F6", // Blue from the button in screenshot
+                        "primary-hover": "#2563EB",
+                        "background-light": "#F3F4F6", // Light gray background
+                        "background-dark": "#0F172A", // Slate 900
+                        "surface-light": "#FFFFFF",
+                        "surface-dark": "#1E293B", // Slate 800
+                        "border-light": "#E2E8F0",
+                        "border-dark": "#334155",
+                    },
+                    fontFamily: {
+                        display: ["Inter", "sans-serif"],
+                        sans: ["Inter", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.5rem",
+                        'lg': '0.75rem',
+                        'xl': '1rem',
+                        '2xl': '1.5rem',
+                    },
+                },
+            },
+        };
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #CBD5E1;
+            border-radius: 20px;
+        }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #475569;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-800 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-200">
+<nav class="bg-card-light dark:bg-card-dark border-b border-border-light dark:border-border-dark sticky top-0 z-50">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="flex justify-between h-16">
+<div class="flex">
+<div class="flex-shrink-0 flex items-center">
+<div class="bg-primary text-white p-1.5 rounded-lg mr-2">
+<span class="material-icons text-xl">smart_toy</span>
 </div>
-{% endblock %}
+<span class="font-bold text-xl tracking-tight">SaaS Bot</span>
+</div>
+<div class="hidden sm:ml-10 sm:flex sm:space-x-8">
+<a class="border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium" href="{% url 'dashboard' %}">Dashboard</a>
+<a class="border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium" href="{% url 'bot-control' %}">Bot Control</a>
+<a class="border-primary text-primary dark:text-blue-400 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium" href="{% url 'extraction' %}">Audience Extraction</a>
+<a class="border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium" href="{% url 'leads' %}">Leads</a>
+</div>
+</div>
+<div class="flex items-center">
+<button class="p-2 mr-4 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full focus:outline-none" onclick="document.documentElement.classList.toggle('dark')">
+<span class="material-icons dark:hidden">dark_mode</span>
+<span class="material-icons hidden dark:block">light_mode</span>
+</button>
+<div class="flex items-center">
+<div class="bg-gray-200 dark:bg-gray-700 rounded-full h-8 w-8 flex items-center justify-center text-sm font-medium text-gray-600 dark:text-gray-300 mr-2">JD</div>
+<span class="text-sm font-medium hidden md:block">John Doe</span>
+</div>
+<button class="ml-4 flex items-center text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+<span class="material-icons text-lg mr-1">logout</span>
+                        Logout
+                    </button>
+</div>
+</div>
+</div>
+</nav>
+<main class="flex-grow container mx-auto px-4 py-8 max-w-5xl">
+<header class="mb-10 text-center sm:text-left">
+<h1 class="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white mb-2">Audience Extraction</h1>
+<p class="text-slate-500 dark:text-slate-400 text-lg max-w-2xl">
+                Configure your data sources and manage bot parameters to build your ideal outreach list.
+            </p>
+</header>
+<div class="bg-surface-light dark:bg-surface-dark rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-border-light dark:border-border-dark overflow-hidden">
+<div class="grid lg:grid-cols-12 min-h-[600px]">
+<div class="lg:col-span-7 p-8 border-b lg:border-b-0 lg:border-r border-border-light dark:border-border-dark">
+<h2 class="text-xl font-semibold mb-6 flex items-center gap-2 text-slate-800 dark:text-slate-100">
+<span class="material-icons-round text-primary">source</span>
+                        Data Source
+                    </h2>
+<div class="flex bg-slate-100 dark:bg-slate-900/50 p-1.5 rounded-xl mb-8">
+<button class="flex-1 py-2.5 px-4 rounded-lg text-sm font-medium bg-white dark:bg-slate-700 shadow-sm text-primary transition-all">
+                            Database Search
+                        </button>
+<button class="flex-1 py-2.5 px-4 rounded-lg text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-all">
+                            Manual URL
+                        </button>
+</div>
+<div class="space-y-6">
+<div class="bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-xl p-5 mb-6">
+<label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                                Search Existing Leads
+                            </label>
+<div class="relative group">
+<span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-icons-round text-slate-400 group-focus-within:text-primary transition-colors">search</span>
+</span>
+<input class="block w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm" id="target-username" placeholder="Search by name, email, or company ID..." type="text" value="@tech_guru"/>
+<div class="absolute z-10 w-full mt-2 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-100 dark:border-slate-700 overflow-hidden animate-fade-in-down origin-top transform transition-all duration-200 ease-out">
+<div class="px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer flex items-center justify-between group/item">
+<div>
+<p class="text-sm font-medium text-slate-900 dark:text-white">@tech_guru</p>
+<p class="text-xs text-slate-500">Tech Influencer • 12.5k Followers</p>
+</div>
+<span class="material-icons-round text-primary text-sm opacity-0 group-hover/item:opacity-100">check</span>
+</div>
+<div class="px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer border-t border-slate-100 dark:border-slate-700/50">
+<p class="text-sm font-medium text-slate-900 dark:text-white">John Smith</p>
+<p class="text-xs text-slate-500">CTO @ Innovation Labs</p>
+</div>
+<div class="px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer border-t border-slate-100 dark:border-slate-700/50">
+<p class="text-sm font-medium text-slate-900 dark:text-white">Company X Official</p>
+<p class="text-xs text-slate-500">Corporate Account</p>
+</div>
+</div>
+</div>
+</div>
+<div class="hidden space-y-4 pt-4 border-t border-dashed border-slate-200 dark:border-slate-700">
+<label class="block text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                Enter Lead URL
+                            </label>
+<div class="flex gap-2">
+<div class="relative flex-grow">
+<span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-icons-round text-slate-400">link</span>
+</span>
+<input class="block w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary shadow-sm" placeholder="https://linkedin.com/in/username" type="url"/>
+</div>
+<button class="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-200 rounded-lg transition-colors" title="Paste from clipboard">
+<span class="material-icons-round text-xl">content_paste</span>
+</button>
+</div>
+</div>
+</div>
+<div class="mt-12 pt-8 border-t border-border-light dark:border-border-dark">
+<button class="flex items-center gap-2 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-primary transition-colors">
+<span class="material-icons-round text-lg">tune</span>
+                            Advanced Filtering Options
+                        </button>
+</div>
+</div>
+<div class="lg:col-span-5 bg-slate-50 dark:bg-slate-800/50 p-8 flex flex-col justify-between">
+<div class="space-y-8">
+<h2 class="text-xl font-semibold mb-6 flex items-center gap-2 text-slate-800 dark:text-slate-100">
+<span class="material-icons-round text-primary">settings_suggest</span>
+                            Extraction Settings
+                        </h2>
+<div class="space-y-3">
+<div class="flex justify-between items-center">
+<label class="text-sm font-medium text-slate-700 dark:text-slate-300">Extraction Quantity</label>
+<span class="text-xs font-semibold bg-primary/10 text-primary px-2 py-1 rounded">Max: 5000</span>
+</div>
+<div class="relative pt-1">
+<input class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary" id="extraction-amount" max="5000" min="1" type="range" value="1500"/>
+<div class="flex justify-between text-xs text-slate-500 mt-2 font-medium">
+<span>1</span>
+<span class="text-primary font-bold text-sm">1,500 Leads</span>
+<span>5,000</span>
+</div>
+</div>
+</div>
+<div class="space-y-3">
+<label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                                Target Account Name
+                                <span class="text-slate-400 font-normal ml-1">(Optional Project Label)</span>
+</label>
+<input class="block w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary shadow-sm" placeholder="e.g. Q4 Outreach Campaign" type="text"/>
+</div>
+<div class="flex items-center justify-between bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+<div class="flex items-center gap-3">
+<div class="bg-amber-100 dark:bg-amber-900/30 p-2 rounded-lg text-amber-600 dark:text-amber-400">
+<span class="material-icons-round text-xl">bolt</span>
+</div>
+<div>
+<p class="text-sm font-semibold text-slate-900 dark:text-white">Fast Mode (API)</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">Skip deep verification for speed</p>
+</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/30 dark:peer-focus:ring-primary/20 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+</label>
+</div>
+</div>
+<div class="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
+<button class="w-full bg-primary hover:bg-primary-hover text-white font-semibold py-4 px-6 rounded-xl shadow-lg shadow-primary/30 transition-all transform active:scale-[0.98] flex items-center justify-center gap-3" onclick="startScraping()">
+<span class="material-icons-round">play_arrow</span>
+                            Extract Lead Data
+                        </button>
+<p class="text-center text-xs text-slate-400 mt-4 flex items-center justify-center gap-1">
+<span class="material-icons-round text-sm">verified_user</span>
+                            Secure processing via SaaS Bot Engine
+                        </p>
+</div>
+</div>
+</div>
+</div>
+</main>
+<footer class="mt-auto border-t border-border-light dark:border-border-dark bg-white dark:bg-slate-900 py-6">
+<div class="container mx-auto px-4 text-center text-sm text-slate-500 dark:text-slate-400">
+            © 2023 SaaS Bot Inc. All rights reserved.
+        </div>
+</footer>
+<div class="fixed bottom-6 right-6 z-50">
+<button class="bg-slate-900 dark:bg-white text-white dark:text-slate-900 p-3 rounded-full shadow-lg hover:scale-110 transition-transform" onclick="document.documentElement.classList.toggle('dark')">
+<span class="material-icons-round block dark:hidden">dark_mode</span>
+<span class="material-icons-round hidden dark:block">light_mode</span>
+</button>
+</div>
+<script>
+    function startScraping() {
+        const username = document.getElementById('target-username').value;
+        const amount = document.getElementById('extraction-amount').value;
+        const accountId = '{{ ACCOUNT_ID }}';
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        if (!username) {
+            alert('Please enter a target username');
+            return;
+        }
+
+        fetch(`/api/account/${accountId}/start-scraping/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({
+                account_id: accountId,
+                target_username: username,
+                amount: parseInt(amount)
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                log('Scraping started successfully');
+            } else {
+                log('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            log('Error starting scraping: ' + error);
+        });
+    }
+
+    function log(message) {
+        console.log('[SaaS Bot]', message);
+    }
+</script>
+
+</body></html>

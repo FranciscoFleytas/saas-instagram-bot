@@ -25,15 +25,71 @@ def dashboard_view(request):
 
 def bot_control_view(request):
     """Renderiza la vista de Control de Bots / Interacción Automática"""
-    return render(request, 'bot_control.html')
+    account = IGAccount.objects.first()
+    account_id = account.id if account else 'sin-cuenta-activa'
+    context = {'account_id': account_id}
+    return render(request, 'bot_control.html', context)
 
 def leads_view(request):
-    """Renderiza la base de datos de Leads (CRM)"""
-    return render(request, 'leads.html')
+    """Renderiza la base de datos de Leads (CRM) con filtros"""
+    leads = Lead.objects.all()
+    
+    # Filtros GET
+    status_filter = request.GET.get('status')
+    if status_filter and status_filter != 'all':
+        leads = leads.filter(status=status_filter)
+    
+    source_filter = request.GET.get('source')
+    if source_filter and source_filter != 'all':
+        leads = leads.filter(source_account__icontains=source_filter)
+    
+    min_followers = request.GET.get('min_followers')
+    if min_followers:
+        try:
+            min_f = int(min_followers)
+            leads = leads.filter(data__followers__gte=min_f)
+        except ValueError:
+            pass
+    
+    max_followers = request.GET.get('max_followers')
+    if max_followers:
+        try:
+            max_f = int(max_followers)
+            leads = leads.filter(data__followers__lte=max_f)
+        except ValueError:
+            pass
+    
+    search_query = request.GET.get('search')
+    if search_query:
+        leads = leads.filter(
+            Q(ig_username__icontains=search_query) |
+            Q(data__bio__icontains=search_query)
+        )
+    
+    # Ordenar y limitar
+    leads = leads.order_by('-created_at')[:100]
+    
+    # Opciones para filtros
+    status_choices = ['to_contact', 'contacted', 'interested']
+    source_accounts = Lead.objects.values_list('source_account', flat=True).distinct()
+    
+    account = IGAccount.objects.first()
+    account_id = account.id if account else 'sin-cuenta-activa'
+    
+    context = {
+        'leads': leads,
+        'status_choices': status_choices,
+        'source_accounts': source_accounts,
+        'account_id': account_id,
+    }
+    return render(request, 'leads.html', context)
 
 def extraction_view(request):
     """Renderiza la herramienta de Extracción de Audiencia"""
-    return render(request, 'extraction.html')
+    account = IGAccount.objects.first()
+    account_id = account.id if account else 'sin-cuenta-activa'
+    context = {'account_id': account_id}
+    return render(request, 'extraction.html', context)
 
 
 # --- VISTAS DE API & FUNCIONALIDAD ---

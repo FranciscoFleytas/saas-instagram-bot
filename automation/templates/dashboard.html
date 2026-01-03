@@ -1,125 +1,223 @@
-{% extends 'base.html' %}
-
-{% block content %}
-<div class="space-y-6">
-    <div>
-        <h1 class="text-2xl font-bold text-gray-900">Dashboard Overview</h1>
-        <p class="text-sm text-gray-500 mt-1">Welcome back, John. Here is what's happening with your bots today.</p>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <div class="flex justify-between items-start mb-4">
-                <div>
-                    <p class="text-sm font-medium text-gray-500">Cuentas Vinculadas</p>
-                    <h3 class="text-3xl font-bold text-gray-900 mt-1">25 <span class="text-lg text-gray-400 font-normal">/ 50</span></h3>
-                </div>
-                <div class="p-2 bg-blue-50 rounded-lg text-primary">
-                    <i class="ri-instagram-line text-xl"></i>
-                </div>
-            </div>
-            <div class="w-full bg-gray-100 rounded-full h-2 mb-2">
-                <div class="bg-primary h-2 rounded-full" style="width: 50%"></div>
-            </div>
-            <div class="flex justify-between text-xs text-gray-500">
-                <span>12 Bots Active</span>
-                <span>50% Usage</span>
-            </div>
-        </div>
-
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <div class="flex justify-between items-start">
-                <div>
-                    <p class="text-sm font-medium text-gray-500">System Status</p>
-                    <div class="flex items-center mt-2">
-                        <span class="flex h-3 w-3 relative mr-2">
-                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                            <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-                        </span>
-                        <h3 class="text-xl font-bold text-gray-900">Operational</h3>
-                    </div>
-                </div>
-                <div class="p-2 bg-green-50 rounded-lg text-green-600">
-                    <i class="ri-checkbox-circle-line text-xl"></i>
-                </div>
-            </div>
-            <p class="text-xs text-gray-400 mt-4">Uptime 99.9% • Last check: 1 min ago</p>
-        </div>
-
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <div class="flex justify-between items-start">
-                <div>
-                    <p class="text-sm font-medium text-gray-500">New Leads Today</p>
-                    <h3 class="text-3xl font-bold text-gray-900 mt-1">142</h3>
-                </div>
-                <div class="p-2 bg-yellow-50 rounded-lg text-yellow-600">
-                    <i class="ri-user-add-line text-xl"></i>
-                </div>
-            </div>
-            <p class="text-xs text-green-600 mt-4 flex items-center">
-                <i class="ri-arrow-up-line mr-1"></i> 12% vs yesterday
-            </p>
-        </div>
-    </div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <h3 class="text-lg font-bold text-gray-900 mb-4">Recent Activity</h3>
-            <div class="space-y-4">
-                <div class="flex items-start space-x-3">
-                    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
-                        <i class="ri-user-follow-line text-sm"></i>
-                    </div>
-                    <div>
-                        <p class="text-sm text-gray-800 font-medium">New Lead Acquired</p>
-                        <p class="text-xs text-gray-500">@design_studio connected via DM</p>
-                        <p class="text-xs text-gray-400 mt-1">2 mins ago</p>
-                    </div>
-                </div>
-                <div class="flex items-start space-x-3">
-                    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600">
-                        <i class="ri-send-plane-fill text-sm"></i>
-                    </div>
-                    <div>
-                        <p class="text-sm text-gray-800 font-medium">Campaign Started</p>
-                        <p class="text-xs text-gray-500">"Winter Promo" is now active</p>
-                        <p class="text-xs text-gray-400 mt-1">1 hour ago</p>
-                    </div>
-                </div>
-                <div class="flex items-start space-x-3">
-                    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-600">
-                        <i class="ri-alert-line text-sm"></i>
-                    </div>
-                    <div>
-                        <p class="text-sm text-gray-800 font-medium">Daily Limit Reached</p>
-                        <p class="text-xs text-gray-500">Account @marketing_john paused</p>
-                        <p class="text-xs text-gray-400 mt-1">3 hours ago</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-lg font-bold text-gray-900">Lead Acquisition</h3>
-                <select class="text-sm border-gray-300 rounded-md text-gray-500 bg-gray-50 py-1 px-2">
-                    <option>Last 7 Days</option>
-                    <option>Last 30 Days</option>
-                </select>
-            </div>
-            <div class="h-64 w-full bg-gray-50 rounded-lg flex items-end justify-between px-4 pb-4 border border-dashed border-gray-200">
-                <div class="w-1/12 bg-blue-200 rounded-t h-1/4 hover:bg-blue-400 transition"></div>
-                <div class="w-1/12 bg-blue-200 rounded-t h-1/3 hover:bg-blue-400 transition"></div>
-                <div class="w-1/12 bg-blue-200 rounded-t h-1/2 hover:bg-blue-400 transition"></div>
-                <div class="w-1/12 bg-blue-200 rounded-t h-2/5 hover:bg-blue-400 transition"></div>
-                <div class="w-1/12 bg-blue-300 rounded-t h-3/5 hover:bg-blue-500 transition"></div>
-                <div class="w-1/12 bg-blue-400 rounded-t h-3/4 hover:bg-blue-600 transition"></div>
-                <div class="w-1/12 bg-blue-600 rounded-t h-full shadow-lg"></div>
-            </div>
-            <div class="flex justify-between mt-4 text-xs text-gray-400">
-                <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
-            </div>
-        </div>
-    </div>
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SaaS Bot Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+<script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              primary: "#2563EB", // Royal Blue
+              "background-light": "#F3F4F6", // Gray-100
+              "background-dark": "#0F172A", // Slate-900
+              "surface-light": "#FFFFFF",
+              "surface-dark": "#1E293B", // Slate-800
+              "accent-green": "#10B981", // Emerald-500
+            },
+            fontFamily: {
+              display: ["Inter", "sans-serif"],
+              sans: ["Inter", "sans-serif"],
+            },
+            borderRadius: {
+              DEFAULT: "0.75rem", // 12px
+            },
+            boxShadow: {
+              'soft': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+            }
+          },
+        },
+      };
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .chart-gradient {
+            background: linear-gradient(180deg, rgba(37, 99, 235, 0.2) 0%, rgba(37, 99, 235, 0) 100%);
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-800 dark:text-slate-100 transition-colors duration-200 min-h-screen flex flex-col">
+<nav class="bg-card-light dark:bg-card-dark border-b border-border-light dark:border-border-dark sticky top-0 z-50">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="flex justify-between h-16">
+<div class="flex">
+<div class="flex-shrink-0 flex items-center">
+<div class="bg-primary text-white p-1.5 rounded-lg mr-2">
+<span class="material-icons text-xl">smart_toy</span>
 </div>
-{% endblock %}
+<span class="font-bold text-xl tracking-tight">SaaS Bot</span>
+</div>
+<div class="hidden sm:ml-10 sm:flex sm:space-x-8">
+<a class="border-primary text-primary dark:text-blue-400 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium" href="{% url 'dashboard' %}">Dashboard</a>
+<a class="border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium" href="{% url 'bot-control' %}">Bot Control</a>
+<a class="border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium" href="{% url 'extraction' %}">Audience Extraction</a>
+<a class="border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium" href="{% url 'leads' %}">Leads</a>
+</div>
+</div>
+<div class="flex items-center">
+<button class="p-2 mr-4 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full focus:outline-none" onclick="document.documentElement.classList.toggle('dark')">
+<span class="material-icons dark:hidden">dark_mode</span>
+<span class="material-icons hidden dark:block">light_mode</span>
+</button>
+<div class="flex items-center">
+<div class="bg-gray-200 dark:bg-gray-700 rounded-full h-8 w-8 flex items-center justify-center text-sm font-medium text-gray-600 dark:text-gray-300 mr-2">JD</div>
+<span class="text-sm font-medium hidden md:block">John Doe</span>
+</div>
+<button class="ml-4 flex items-center text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+<span class="material-icons text-lg mr-1">logout</span>
+                        Logout
+                    </button>
+</div>
+</div>
+</div>
+</nav>
+<main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+<div class="mb-8">
+<h1 class="text-3xl font-bold text-slate-900 dark:text-white mb-2">Dashboard Overview</h1>
+<p class="text-slate-500 dark:text-slate-400">Welcome back! Here is your bots performance summary.</p>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<div class="lg:col-span-2 bg-surface-light dark:bg-surface-dark rounded-2xl p-6 shadow-soft border border-slate-200 dark:border-slate-700 relative overflow-hidden group hover:border-primary/30 transition-all duration-300">
+<div class="absolute top-0 right-0 p-6 opacity-10 dark:opacity-5 group-hover:scale-110 transition-transform duration-500">
+<span class="material-icons text-9xl text-primary">link</span>
+</div>
+<div class="relative z-10 flex flex-col h-full justify-between">
+<div>
+<h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Cuentas Vinculadas</h2>
+<div class="flex items-baseline gap-2">
+<span class="text-6xl font-bold text-slate-900 dark:text-white tracking-tight">25</span>
+<span class="text-3xl font-medium text-slate-400 dark:text-slate-500">/ 50</span>
+</div>
+<p class="text-sm font-medium text-primary mt-1">Bots Active</p>
+</div>
+<div class="mt-8">
+<div class="flex justify-between text-sm font-medium mb-2 text-slate-600 dark:text-slate-300">
+<span>Utilization</span>
+<span>50%</span>
+</div>
+<div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-3 overflow-hidden">
+<div class="bg-primary h-3 rounded-full transition-all duration-1000 ease-out" style="width: 50%"></div>
+</div>
+<p class="text-xs text-slate-400 dark:text-slate-500 mt-2">15 bots currently in standby mode. Upgrade plan to increase limit.</p>
+</div>
+</div>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark rounded-2xl p-6 shadow-soft border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center text-center hover:border-accent-green/30 transition-all duration-300">
+<h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 w-full text-left mb-4">System Status</h2>
+<div class="flex-grow flex flex-col items-center justify-center py-4">
+<div class="relative mb-4">
+<div class="absolute inset-0 bg-accent-green/20 rounded-full animate-ping"></div>
+<div class="relative bg-white dark:bg-slate-800 rounded-full p-2">
+<span class="material-icons text-6xl text-accent-green">check_circle</span>
+</div>
+</div>
+<h3 class="text-2xl font-bold text-accent-green mb-1">OPERATIONAL</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400">All systems running smoothly</p>
+</div>
+<div class="w-full mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 flex justify-between text-xs text-slate-400">
+<span>Uptime: 99.9%</span>
+<span>Last check: 2m ago</span>
+</div>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark rounded-2xl p-6 shadow-soft border border-slate-200 dark:border-slate-700 h-96 flex flex-col">
+<div class="flex justify-between items-center mb-6">
+<h2 class="text-lg font-bold text-slate-900 dark:text-white">Recent Activity</h2>
+<button class="text-xs text-primary hover:text-blue-600 font-medium">View All</button>
+</div>
+<div class="space-y-6 overflow-y-auto pr-2 custom-scrollbar flex-grow">
+<div class="flex gap-4 group">
+<div class="mt-1 flex-shrink-0">
+<span class="material-icons text-blue-400 text-sm bg-blue-50 dark:bg-blue-900/30 p-1.5 rounded-full">person_add</span>
+</div>
+<div>
+<p class="text-sm text-slate-800 dark:text-slate-200 font-medium group-hover:text-primary transition-colors">New lead <span class="font-bold">@tech_guru</span> detected</p>
+<p class="text-xs text-slate-400 mt-0.5">2 minutes ago</p>
+</div>
+</div>
+<div class="flex gap-4 group">
+<div class="mt-1 flex-shrink-0">
+<span class="material-icons text-purple-400 text-sm bg-purple-50 dark:bg-purple-900/30 p-1.5 rounded-full">rocket_launch</span>
+</div>
+<div>
+<p class="text-sm text-slate-800 dark:text-slate-200 font-medium group-hover:text-primary transition-colors">Bot "Alpha" started campaign "Q3 Outreach"</p>
+<p class="text-xs text-slate-400 mt-0.5">15 minutes ago</p>
+</div>
+</div>
+<div class="flex gap-4 group">
+<div class="mt-1 flex-shrink-0">
+<span class="material-icons text-green-400 text-sm bg-green-50 dark:bg-green-900/30 p-1.5 rounded-full">send</span>
+</div>
+<div>
+<p class="text-sm text-slate-800 dark:text-slate-200 font-medium group-hover:text-primary transition-colors">Message delivered to <span class="font-bold">@startup_founder</span></p>
+<p class="text-xs text-slate-400 mt-0.5">1 hour ago</p>
+</div>
+</div>
+<div class="flex gap-4 group">
+<div class="mt-1 flex-shrink-0">
+<span class="material-icons text-yellow-500 text-sm bg-yellow-50 dark:bg-yellow-900/30 p-1.5 rounded-full">warning</span>
+</div>
+<div>
+<p class="text-sm text-slate-800 dark:text-slate-200 font-medium group-hover:text-primary transition-colors">Daily limit reached for Bot "Beta"</p>
+<p class="text-xs text-slate-400 mt-0.5">3 hours ago</p>
+</div>
+</div>
+</div>
+</div>
+<div class="lg:col-span-2 bg-surface-light dark:bg-surface-dark rounded-2xl p-6 shadow-soft border border-slate-200 dark:border-slate-700 flex flex-col">
+<div class="flex justify-between items-start mb-4">
+<div>
+<h2 class="text-lg font-bold text-slate-900 dark:text-white">Performance Trend</h2>
+<p class="text-sm text-slate-500 dark:text-slate-400">Lead Acquisition (Last 7 Days)</p>
+</div>
+<select class="bg-slate-50 dark:bg-slate-800 border-none text-xs rounded-lg py-1 px-3 text-slate-600 dark:text-slate-300 focus:ring-1 focus:ring-primary cursor-pointer">
+<option>Last 7 Days</option>
+<option>Last 30 Days</option>
+<option>This Month</option>
+</select>
+</div>
+<div class="flex-grow w-full h-64 relative flex items-end">
+<svg class="w-full h-full" preserveAspectRatio="none" viewBox="0 0 800 200">
+<defs>
+<linearGradient id="chartGradient" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#2563EB" stop-opacity="0.2"></stop>
+<stop offset="100%" stop-color="#2563EB" stop-opacity="0"></stop>
+</linearGradient>
+</defs>
+<path d="M0,200 L0,180 L133,160 L266,155 L400,110 L533,90 L666,80 L800,40 L800,200 Z" fill="url(#chartGradient)"></path>
+<path class="drop-shadow-sm" d="M0,180 L133,160 L266,155 L400,110 L533,90 L666,80 L800,40" fill="none" stroke="#2563EB" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"></path>
+<circle class="fill-white dark:fill-slate-800 stroke-primary stroke-2 hover:r-6 transition-all duration-300" cx="0" cy="180" r="4"></circle>
+<circle class="fill-white dark:fill-slate-800 stroke-primary stroke-2 hover:r-6 transition-all duration-300" cx="133" cy="160" r="4"></circle>
+<circle class="fill-white dark:fill-slate-800 stroke-primary stroke-2 hover:r-6 transition-all duration-300" cx="266" cy="155" r="4"></circle>
+<circle class="fill-white dark:fill-slate-800 stroke-primary stroke-2 hover:r-6 transition-all duration-300" cx="400" cy="110" r="4"></circle>
+<circle class="fill-white dark:fill-slate-800 stroke-primary stroke-2 hover:r-6 transition-all duration-300" cx="533" cy="90" r="4"></circle>
+<circle class="fill-white dark:fill-slate-800 stroke-primary stroke-2 hover:r-6 transition-all duration-300" cx="666" cy="80" r="4"></circle>
+<circle class="fill-white dark:fill-slate-800 stroke-primary stroke-2 hover:r-6 transition-all duration-300" cx="800" cy="40" r="4"></circle>
+</svg>
+<div class="absolute bottom-0 left-0 right-0 flex justify-between text-xs text-slate-400 mt-2">
+<span>Mon</span>
+<span>Tue</span>
+<span>Wed</span>
+<span>Thu</span>
+<span>Fri</span>
+<span>Sat</span>
+<span>Sun</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+<script>
+        // Simple script to toggle dark mode for demonstration
+        // In a real app, this would check system preferences or local storage
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
+
+</body></html>
