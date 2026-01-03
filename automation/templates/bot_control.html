@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-900">Automatic Interaction</h1>
+    <p class="text-sm text-gray-500">Configure behavior for automated engagement.</p>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="p-6 border-b border-gray-100">
+            <h2 class="text-lg font-semibold text-gray-900">Campaign Setup</h2>
+        </div>
+        
+        <form class="p-6 space-y-8">
+            <div>
+                <span class="text-xs font-bold text-blue-600 uppercase tracking-wide">Step 1: Target Content</span>
+                <div class="mt-4 grid gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Target URL</label>
+                        <input type="text" placeholder="https://instagram.com/p/..." class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm py-2 px-3 border">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Content Type</label>
+                        <div class="flex space-x-4">
+                            <label class="flex-1 cursor-pointer">
+                                <input type="radio" name="ctype" class="peer sr-only" checked>
+                                <div class="rounded-lg border border-gray-200 p-4 text-center hover:bg-gray-50 peer-checked:border-primary peer-checked:bg-blue-50 peer-checked:text-primary transition">
+                                    <i class="ri-image-line text-2xl mb-1 block"></i>
+                                    <span class="text-sm font-medium">Post</span>
+                                </div>
+                            </label>
+                            <label class="flex-1 cursor-pointer">
+                                <input type="radio" name="ctype" class="peer sr-only">
+                                <div class="rounded-lg border border-gray-200 p-4 text-center hover:bg-gray-50 peer-checked:border-primary peer-checked:bg-blue-50 peer-checked:text-primary transition">
+                                    <i class="ri-movie-line text-2xl mb-1 block"></i>
+                                    <span class="text-sm font-medium">Reel</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <hr class="border-gray-100">
+
+            <div>
+                <span class="text-xs font-bold text-blue-600 uppercase tracking-wide">Step 2: Engagement Actions</span>
+                <div class="mt-4 space-y-4">
+                    <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                        <div class="flex items-center">
+                            <input type="checkbox" class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded" checked>
+                            <span class="ml-3 text-sm font-medium text-gray-700">Like Content</span>
+                        </div>
+                        <span class="text-xs text-gray-400">1 Credit</span>
+                    </div>
+                    
+                    <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                        <div class="flex items-center">
+                            <input type="checkbox" class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded">
+                            <span class="ml-3 text-sm font-medium text-gray-700">Save Post</span>
+                        </div>
+                        <span class="text-xs text-gray-400">2 Credits</span>
+                    </div>
+
+                    <div class="border border-indigo-100 rounded-lg p-4 bg-indigo-50/30">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center">
+                                <input type="checkbox" class="h-4 w-4 text-accent focus:ring-accent border-gray-300 rounded" checked>
+                                <span class="ml-3 text-sm font-semibold text-gray-900">Auto Comment</span>
+                                <span class="ml-2 bg-accent text-white text-[10px] px-2 py-0.5 rounded-full font-bold">PREMIUM AI</span>
+                            </div>
+                        </div>
+                        <div class="pl-7 space-y-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Tone</label>
+                                <select class="block w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-accent focus:ring-accent">
+                                    <option>Professional / Expert</option>
+                                    <option>Casual / Friendly</option>
+                                    <option>Sales Oriented</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Context / Instructions</label>
+                                <textarea rows="2" class="block w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-accent focus:ring-accent" placeholder="e.g., Mention our discount on DM..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-gray-50 -m-6 p-6 flex items-center justify-between border-t border-gray-100 mt-8">
+                <div>
+                    <p class="text-xs text-gray-500">Estimated Cost</p>
+                    <p class="text-lg font-bold text-gray-900">25 Credits</p>
+                </div>
+                <button type="submit" class="bg-primary hover:bg-blue-700 text-white font-medium py-2.5 px-6 rounded-lg shadow-sm transition flex items-center">
+                    Launch Campaign <i class="ri-rocket-line ml-2"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div class="space-y-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+            <h3 class="text-sm font-bold text-gray-900 mb-3">System Status</h3>
+            <div class="flex items-center text-green-600 text-sm font-medium">
+                <i class="ri-check-double-line mr-2 text-lg"></i> All systems operational
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-violet-500 to-indigo-600 rounded-xl shadow-sm p-5 text-white">
+            <div class="flex items-start">
+                <i class="ri-lightbulb-flash-line text-2xl opacity-80 mr-3"></i>
+                <div>
+                    <h3 class="text-sm font-bold mb-1">Pro Tip: AI Comments</h3>
+                    <p class="text-xs opacity-90 leading-relaxed">
+                        Using "Expert" tone increases response rates by 40% on B2B posts.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+            <h3 class="text-sm font-bold text-gray-900 mb-4">Recent Interactions</h3>
+            <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600">JD</div>
+                        <div class="ml-3">
+                            <p class="text-xs font-bold text-gray-900">@john_doe</p>
+                            <p class="text-[10px] text-gray-500">Comment + Like</p>
+                        </div>
+                    </div>
+                    <span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Completed</span>
+                </div>
+                 <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600">SM</div>
+                        <div class="ml-3">
+                            <p class="text-xs font-bold text-gray-900">@sarah_mkt</p>
+                            <p class="text-[10px] text-gray-500">Story Reply</p>
+                        </div>
+                    </div>
+                    <span class="text-[10px] bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-medium">Processing</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

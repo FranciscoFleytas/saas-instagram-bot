@@ -1,422 +1,125 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<style>
-    /* Estilos Específicos del Dashboard (Clean Version) */
-    
-    /* Métricas */
-    .metric-card {
-        background: white;
-        border: 1px solid var(--border-color);
-        border-radius: 8px;
-        padding: 1.25rem;
-        display: flex;
-        flex-direction: column;
-        transition: transform 0.2s;
-    }
-    .metric-card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
-    .metric-label { font-size: 0.85rem; color: var(--text-secondary); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
-    .metric-value { font-size: 1.8rem; font-weight: 700; color: var(--text-primary); margin-top: 0.5rem; }
-    .metric-sub { font-size: 0.8rem; margin-top: auto; padding-top: 0.5rem; }
-    
-    /* Switch Toggle Custom */
-    .toggle-switch {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0.75rem;
-        background: #f9fafb;
-        border: 1px solid var(--border-color);
-        border-radius: 6px;
-        margin-top: 1rem;
-    }
-    .toggle-label { font-size: 0.9rem; font-weight: 600; }
-    .toggle-desc { font-size: 0.75rem; color: var(--text-secondary); display: block; }
-    
-    /* Table Notion Style */
-    .table-custom { width: 100%; border-collapse: separate; border-spacing: 0; }
-    .table-custom th { 
-        text-align: left; padding: 1rem; 
-        background: #f9fafb; border-bottom: 1px solid var(--border-color);
-        font-size: 0.75rem; text-transform: uppercase; color: var(--text-secondary); font-weight: 600;
-    }
-    .table-custom td { padding: 1rem; border-bottom: 1px solid var(--border-color); font-size: 0.9rem; vertical-align: middle; }
-    
-    /* Badges */
-    .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; display: inline-block; }
-    .niche-badge { font-size: 0.75rem; background: #f3f4f6; padding: 2px 8px; border-radius: 12px; border: 1px solid #e5e7eb; color: #374151; }
-
-</style>
-
-<div class="row g-4 mb-4">
-    <div class="col-md-3">
-        <div class="metric-card">
-            <span class="metric-label">Leads Totales</span>
-            <span class="metric-value" id="kpi-leads">0</span>
-            <span class="metric-sub text-success">Base de Datos</span>
-        </div>
+<div class="space-y-6">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900">Dashboard Overview</h1>
+        <p class="text-sm text-gray-500 mt-1">Welcome back, John. Here is what's happening with your bots today.</p>
     </div>
-    <div class="col-md-3">
-        <div class="metric-card">
-            <span class="metric-label">Mensajes Enviados</span>
-            <span class="metric-value" id="kpi-dms">0</span>
-            <span class="metric-sub text-primary">Outreach Activo</span>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="metric-card">
-            <span class="metric-label">Estado del Sistema</span>
-            <span class="metric-value" style="font-size: 1.5rem; color: #059669;">OPERATIVO</span>
-            <span class="metric-sub text-secondary">Enjambre Activo</span>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="metric-card">
-            <span class="metric-label">Capacidad de Bots</span>
-            <span class="metric-value">108</span>
-            <span class="metric-sub text-secondary">Cuentas Listas</span>
-        </div>
-    </div>
-</div>
 
-<div class="row g-4">
-    <div class="col-lg-4">
-        
-        <div class="panel">
-            <div class="panel-header">
-                <h3 class="panel-title">📡 Extracción de Audiencia</h3>
-            </div>
-            
-            <div class="mb-3">
-                <label class="form-label">Cuenta Fuente (Target)</label>
-                <input type="text" id="targetUsername" class="form-control" placeholder="Ej: competencia_oficial">
-                <small class="text-muted">Extraer seguidores de este perfil.</small>
-            </div>
-            
-            <div class="mb-3">
-                <label class="form-label">Cantidad a Extraer</label>
-                <input type="number" id="scrapeAmount" class="form-control" value="50" min="10" max="1000">
-            </div>
-
-            <div class="toggle-switch">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div class="flex justify-between items-start mb-4">
                 <div>
-                    <span class="toggle-label">⚡ Modo Rápido (API)</span>
-                    <span class="toggle-desc">Velocidad máxima (Recomendado)</span>
+                    <p class="text-sm font-medium text-gray-500">Cuentas Vinculadas</p>
+                    <h3 class="text-3xl font-bold text-gray-900 mt-1">25 <span class="text-lg text-gray-400 font-normal">/ 50</span></h3>
                 </div>
-                <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" id="scrapingFastMode" checked>
+                <div class="p-2 bg-blue-50 rounded-lg text-primary">
+                    <i class="ri-instagram-line text-xl"></i>
                 </div>
             </div>
-
-            <button onclick="startScraping()" class="btn btn-primary w-100 mt-4">
-                INICIAR BÚSQUEDA
-            </button>
+            <div class="w-full bg-gray-100 rounded-full h-2 mb-2">
+                <div class="bg-primary h-2 rounded-full" style="width: 50%"></div>
+            </div>
+            <div class="flex justify-between text-xs text-gray-500">
+                <span>12 Bots Active</span>
+                <span>50% Usage</span>
+            </div>
         </div>
 
-        <div class="panel">
-            <div class="panel-header">
-                <h3 class="panel-title">💬 Interacción Automática</h3>
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label">Enlace de Publicación</label>
-                <input type="text" id="postUrl" class="form-control" placeholder="https://instagram.com/p/...">
-            </div>
-
-            <div class="row mb-3">
-                <div class="col-4">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="checkLike" checked>
-                        <label class="form-check-label font-small">Dar Like</label>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">System Status</p>
+                    <div class="flex items-center mt-2">
+                        <span class="flex h-3 w-3 relative mr-2">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                        </span>
+                        <h3 class="text-xl font-bold text-gray-900">Operational</h3>
                     </div>
                 </div>
-                <div class="col-4">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="checkComment" checked>
-                        <label class="form-check-label font-small">Comentar</label>
+                <div class="p-2 bg-green-50 rounded-lg text-green-600">
+                    <i class="ri-checkbox-circle-line text-xl"></i>
+                </div>
+            </div>
+            <p class="text-xs text-gray-400 mt-4">Uptime 99.9% • Last check: 1 min ago</p>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">New Leads Today</p>
+                    <h3 class="text-3xl font-bold text-gray-900 mt-1">142</h3>
+                </div>
+                <div class="p-2 bg-yellow-50 rounded-lg text-yellow-600">
+                    <i class="ri-user-add-line text-xl"></i>
+                </div>
+            </div>
+            <p class="text-xs text-green-600 mt-4 flex items-center">
+                <i class="ri-arrow-up-line mr-1"></i> 12% vs yesterday
+            </p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-bold text-gray-900 mb-4">Recent Activity</h3>
+            <div class="space-y-4">
+                <div class="flex items-start space-x-3">
+                    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                        <i class="ri-user-follow-line text-sm"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-800 font-medium">New Lead Acquired</p>
+                        <p class="text-xs text-gray-500">@design_studio connected via DM</p>
+                        <p class="text-xs text-gray-400 mt-1">2 mins ago</p>
                     </div>
                 </div>
-                <div class="col-4">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="checkSave">
-                        <label class="form-check-label font-small">Guardar</label>
+                <div class="flex items-start space-x-3">
+                    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600">
+                        <i class="ri-send-plane-fill text-sm"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-800 font-medium">Campaign Started</p>
+                        <p class="text-xs text-gray-500">"Winter Promo" is now active</p>
+                        <p class="text-xs text-gray-400 mt-1">1 hour ago</p>
+                    </div>
+                </div>
+                <div class="flex items-start space-x-3">
+                    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-600">
+                        <i class="ri-alert-line text-sm"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-800 font-medium">Daily Limit Reached</p>
+                        <p class="text-xs text-gray-500">Account @marketing_john paused</p>
+                        <p class="text-xs text-gray-400 mt-1">3 hours ago</p>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <div class="mb-3">
-                <label class="form-label">Tono de la IA</label>
-                <select id="aiPersonaSelect" class="form-select" onchange="toggleCustomPersona()">
-                    <option value="Profesional y Serio">👔 Profesional / Experto</option>
-                    <option value="Sarcástico y Divertido">🤡 Sarcástico / Divertido</option>
-                    <option value="Hater Suave">😡 Crítico / Polémico</option>
-                    <option value="custom">✨ Personalizado...</option>
+        <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-bold text-gray-900">Lead Acquisition</h3>
+                <select class="text-sm border-gray-300 rounded-md text-gray-500 bg-gray-50 py-1 px-2">
+                    <option>Last 7 Days</option>
+                    <option>Last 30 Days</option>
                 </select>
             </div>
-
-            <div id="customPersonaGroup" style="display:none;" class="mb-3">
-                <input type="text" id="aiPersonaCustom" class="form-control" placeholder="Ej: Habla como un experto en marketing...">
+            <div class="h-64 w-full bg-gray-50 rounded-lg flex items-end justify-between px-4 pb-4 border border-dashed border-gray-200">
+                <div class="w-1/12 bg-blue-200 rounded-t h-1/4 hover:bg-blue-400 transition"></div>
+                <div class="w-1/12 bg-blue-200 rounded-t h-1/3 hover:bg-blue-400 transition"></div>
+                <div class="w-1/12 bg-blue-200 rounded-t h-1/2 hover:bg-blue-400 transition"></div>
+                <div class="w-1/12 bg-blue-200 rounded-t h-2/5 hover:bg-blue-400 transition"></div>
+                <div class="w-1/12 bg-blue-300 rounded-t h-3/5 hover:bg-blue-500 transition"></div>
+                <div class="w-1/12 bg-blue-400 rounded-t h-3/4 hover:bg-blue-600 transition"></div>
+                <div class="w-1/12 bg-blue-600 rounded-t h-full shadow-lg"></div>
             </div>
-
-            <button onclick="startCommentBot()" class="btn btn-primary w-100 mt-4">
-                LANZAR CAMPAÑA
-            </button>
-        </div>
-    </div>
-
-    <div class="col-lg-8">
-        <div class="panel" style="padding: 0; overflow: hidden; min-height: 600px; display: flex; flex-direction: column;">
-            
-            <div class="p-3 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-3 bg-white">
-                <div class="d-flex align-items-center gap-2">
-                    <h3 class="panel-title me-3">Base de Datos de Leads</h3>
-                    
-                    <div class="position-relative">
-                        <input type="text" id="leadSearch" class="form-control form-control-sm ps-4" placeholder="Buscar lead..." 
-                               style="border-radius: 4px; background: #f3f4f6; border:none; width: 220px;" onkeyup="debounceLoadLeads()">
-                        <span style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #9ca3af; font-size: 0.8rem;">🔍</span>
-                    </div>
-                </div>
-
-                <div class="d-flex gap-2">
-                    <select id="filterStatus" class="form-select form-select-sm" onchange="loadLeads(1)" style="width: auto; background-color: #f9fafb;">
-                        <option value="all">Estado: Todos</option>
-                        <option value="to_contact">Pendiente</option>
-                        <option value="contacted">Contactado</option>
-                    </select>
-
-                    <select id="filterNiche" class="form-select form-select-sm" onchange="loadLeads(1)" style="width: auto; background-color: #f9fafb;">
-                        <option value="all">Nicho: Todos</option>
-                        <option value="Real Estate">Real Estate</option>
-                        <option value="Salud & Medicina">Salud & Medicina</option>
-                        <option value="Marketing">Marketing</option>
-                        <option value="Negocios">Negocios</option>
-                        <option value="Coach">Coach</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="table-responsive flex-grow-1">
-                <table class="table-custom mb-0">
-                    <thead style="background: #f9fafb;">
-                        <tr>
-                            <th style="padding-left: 1.5rem;">Lead</th>
-                            <th>Métricas</th>
-                            <th>Nicho</th>
-                            <th>Estado</th>
-                            <th class="text-end" style="padding-right: 1.5rem;">Acción</th>
-                        </tr>
-                    </thead>
-                    <tbody id="leadsTableBody" class="bg-white">
-                        <tr><td colspan="5" class="text-center py-5 text-secondary">Cargando base de datos...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="p-3 border-top d-flex justify-content-between align-items-center bg-white mt-auto">
-                <span class="text-secondary" style="font-size: 0.8rem;" id="paginationInfo">Cargando...</span>
-                <div class="btn-group">
-                    <button class="btn btn-sm btn-outline-light text-dark border" id="btnPrev" onclick="changePage(-1)" disabled>Anterior</button>
-                    <button class="btn btn-sm btn-outline-light text-dark border" id="btnNext" onclick="changePage(1)" disabled>Siguiente</button>
-                </div>
+            <div class="flex justify-between mt-4 text-xs text-gray-400">
+                <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
             </div>
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-    const ACCOUNT_ID = "{{ account_id }}"; 
-
-    // --- VARIABLES GLOBALES ---
-    let currentPage = 1;
-    let totalPages = 1;
-    let debounceTimer;
-
-    // --- FUNCIONES AUXILIARES ---
-    function toggleCustomPersona() {
-        const val = document.getElementById('aiPersonaSelect').value;
-        document.getElementById('customPersonaGroup').style.display = (val === 'custom') ? 'block' : 'none';
-    }
-
-    function cleanUsername(input) {
-        if (input.includes('instagram.com/')) {
-            try { return input.split('instagram.com/')[1].split('/')[0].split('?')[0]; } 
-            catch { return input; }
-        }
-        return input;
-    }
-
-    // --- LÓGICA DEL BOT (EXTRACCIÓN) ---
-    function startScraping() {
-        let rawTarget = document.getElementById('targetUsername').value;
-        const amount = document.getElementById('scrapeAmount').value;
-        const useFastMode = document.getElementById('scrapingFastMode').checked;
-
-        if(!rawTarget) return alert("⚠️ Por favor ingresa una cuenta objetivo.");
-        const target = cleanUsername(rawTarget);
-        
-        // Feedback visual simple (sin consola hacker)
-        alert(`🚀 Iniciando extracción de ${amount} seguidores de @${target}. \nLa tarea se ejecutará en segundo plano.`);
-        
-        fetch(`/api/account/${ACCOUNT_ID}/start-scraping/`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-            body: JSON.stringify({ 
-                target_username: target, 
-                amount: amount,
-                use_fast_mode: useFastMode 
-            })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if(!data.status) alert(`❌ Error: ${data.error}`);
-            // Actualizar tabla en unos segundos
-            setTimeout(() => loadLeads(1), 3000);
-        })
-        .catch(err => console.error("Error red:", err));
-    }
-
-    // --- LÓGICA DEL BOT (INTERACCIÓN) ---
-    function startCommentBot() {
-        const url = document.getElementById('postUrl').value;
-        let persona = document.getElementById('aiPersonaSelect').value;
-        if(persona === 'custom') persona = document.getElementById('aiPersonaCustom').value;
-        
-        const doLike = document.getElementById('checkLike').checked;
-        const doComment = document.getElementById('checkComment').checked;
-        const doSave = document.getElementById('checkSave').checked;
-
-        if(!url) return alert("⚠️ Ingresa el link del post.");
-        
-        alert(`🤖 Bot activado. Interactuando con el post...`);
-
-        fetch(`/api/account/${ACCOUNT_ID}/start-bot/`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-            body: JSON.stringify({ 
-                post_url: url, 
-                user_persona: persona,
-                do_like: doLike,
-                do_comment: doComment,
-                do_save: doSave,
-                use_fast_mode: true
-            })
-        })
-        .catch(err => console.error("Error crítico:", err));
-    }
-
-    // --- LÓGICA DE TABLA (FILTROS + PAGINACIÓN) ---
-    function debounceLoadLeads() {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => loadLeads(1), 500);
-    }
-
-    function changePage(direction) {
-        const newPage = currentPage + direction;
-        if (newPage > 0 && newPage <= totalPages) {
-            loadLeads(newPage);
-        }
-    }
-
-    function loadLeads(page = 1) {
-        const search = document.getElementById('leadSearch').value;
-        const status = document.getElementById('filterStatus').value;
-        const niche = document.getElementById('filterNiche').value;
-        
-        const params = new URLSearchParams({
-            page: page,
-            search: search,
-            status: status,
-            niche: niche
-        });
-
-        fetch(`/api/account/${ACCOUNT_ID}/leads/?${params.toString()}`)
-        .then(res => res.json())
-        .then(data => {
-            const tbody = document.getElementById('leadsTableBody');
-            tbody.innerHTML = ''; 
-            
-            currentPage = data.current_page;
-            totalPages = data.total_pages;
-            
-            // Actualizar Métricas KPI
-            document.getElementById('kpi-leads').innerText = data.count; 
-            document.getElementById('paginationInfo').innerText = `Pág ${currentPage} de ${totalPages} (${data.count} registros)`;
-            
-            document.getElementById('btnPrev').disabled = (currentPage === 1);
-            document.getElementById('btnNext').disabled = (currentPage === totalPages || totalPages === 0);
-
-            if(data.results.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-secondary">No se encontraron leads con estos filtros.</td></tr>';
-                return;
-            }
-            
-            data.results.forEach(lead => {
-                let badgeStyle = 'background: #e5e7eb; color: #374151;'; 
-                let statusText = 'PENDIENTE';
-                
-                if(lead.status === 'contacted') { badgeStyle = 'background: #d1fae5; color: #065f46;'; statusText = 'CONTACTADO'; }
-                if(lead.status === 'replied') { badgeStyle = 'background: #dbeafe; color: #1e40af;'; statusText = 'RESPONDIÓ'; }
-
-                let followers = '-', engagement = '-', niche = '-';
-                if(lead.data) {
-                    followers = lead.data.followers ? lead.data.followers.toLocaleString() : '-';
-                    engagement = lead.data.engagement ? lead.data.engagement + '%' : '-';
-                    niche = lead.data.niche || '-';
-                }
-
-                let btn = `<button class="btn btn-sm btn-light border" onclick="sendDM('${lead.id}', '${lead.ig_username}')" style="font-size: 0.75rem;">
-                            Enviar DM
-                           </button>`;
-                
-                if(lead.status === 'contacted') {
-                    btn = `<span style="font-size: 0.75rem; color: #059669;">✔ Enviado</span>`;
-                }
-
-                tbody.innerHTML += `
-                    <tr>
-                        <td style="padding-left: 1.5rem;">
-                            <div style="font-weight: 600; color: #111827;">@${lead.ig_username}</div>
-                            <div style="font-size: 0.75rem; color: #6b7280;">${lead.full_name || ''}</div>
-                        </td>
-                        <td>
-                            <div style="font-size: 0.85rem;">
-                                <span class="d-block">👥 ${followers}</span>
-                                <span class="d-block text-muted">📈 ${engagement}</span>
-                            </div>
-                        </td>
-                        <td><span class="niche-badge">${niche}</span></td>
-                        <td>
-                            <span style="padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; ${badgeStyle}">
-                                ${statusText}
-                            </span>
-                        </td>
-                        <td class="text-end" style="padding-right: 1.5rem;">${btn}</td>
-                    </tr>
-                `;
-            });
-        })
-        .catch(err => {
-            console.error(err);
-            document.getElementById('leadsTableBody').innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error de conexión con base de datos.</td></tr>';
-        });
-    }
-
-    function sendDM(leadId, username) {
-        if(!confirm(`¿Enviar mensaje a @${username}?`)) return;
-        fetch(`/api/account/${ACCOUNT_ID}/start-outreach/`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-            body: JSON.stringify({ lead_id: leadId })
-        }).then(() => {
-            alert(`Mensaje encolado para @${username}`);
-            loadLeads(currentPage); // Recargar página actual para ver cambio de estado
-        });
-    }
-
-    // Cargar datos al inicio
-    document.addEventListener('DOMContentLoaded', () => loadLeads(1));
-</script>
 {% endblock %}
