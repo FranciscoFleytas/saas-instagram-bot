@@ -1,413 +1,137 @@
-<!DOCTYPE html>
-<html lang="en"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Lead Database - SaaS Bot</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<script>
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        primary: "#3B82F6", 
-                        "background-light": "#F3F4F6", 
-                        "background-dark": "#111827", 
-                        "card-light": "#FFFFFF",
-                        "card-dark": "#1F2937",
-                        "text-light": "#1F2937",
-                        "text-dark": "#F9FAFB",
-                        "border-light": "#E5E7EB",
-                        "border-dark": "#374151",
-                    },
-                    fontFamily: {
-                        display: ["Inter", "sans-serif"],
-                        body: ["Inter", "sans-serif"],
-                    },
-                    borderRadius: {
-                        DEFAULT: "0.5rem",
-                    },
-                },
-            },
-        };
-    </script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
-<style>
-        body { font-family: 'Inter', sans-serif; }
-    </style>
-</head>
-<body class="bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark transition-colors duration-200">
-<nav class="bg-card-light dark:bg-card-dark border-b border-border-light dark:border-border-dark sticky top-0 z-50">
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-<div class="flex justify-between h-16">
-<div class="flex">
-<div class="flex-shrink-0 flex items-center">
-<div class="bg-primary text-white p-1.5 rounded-lg mr-2">
-<span class="material-icons text-xl">smart_toy</span>
-</div>
-<span class="font-bold text-xl tracking-tight">SaaS Bot</span>
-</div>
-<div class="hidden sm:ml-10 sm:flex sm:space-x-8">
-<a class="border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium" href="{% url 'dashboard' %}">Dashboard</a>
-<a class="border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium" href="{% url 'bot-control' %}">Bot Control</a>
-<a class="border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium" href="{% url 'extraction' %}">Audience Extraction</a>
-<a class="border-primary text-primary dark:text-blue-400 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium" href="{% url 'leads' %}">Lead Database</a>
-</div>
-</div>
-<div class="flex items-center">
-<button class="p-2 mr-4 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full focus:outline-none" onclick="document.documentElement.classList.toggle('dark')">
-<span class="material-icons dark:hidden">dark_mode</span>
-<span class="material-icons hidden dark:block">light_mode</span>
-</button>
-<div class="flex items-center">
-<div class="bg-gray-200 dark:bg-gray-700 rounded-full h-8 w-8 flex items-center justify-center text-sm font-medium text-gray-600 dark:text-gray-300 mr-2">JD</div>
-<span class="text-sm font-medium hidden md:block">John Doe</span>
-</div>
-<button class="ml-4 flex items-center text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
-<span class="material-icons text-lg mr-1">logout</span>
-                        Logout
-                    </button>
-</div>
-</div>
-</div>
-</nav>
-<main class="py-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-<div class="md:flex md:items-center md:justify-between mb-8">
-<div class="flex-1 min-w-0">
-<h2 class="text-2xl font-bold leading-7 text-text-light dark:text-text-dark sm:text-3xl sm:truncate">
-                    Lead Database
-                </h2>
-<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    View, manage, and export your extracted leads and audience data.
-                </p>
-</div>
-<div class="mt-4 flex md:mt-0 md:ml-4 space-x-3">
-<button class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary" type="button">
-<span class="material-icons text-gray-500 mr-2 -ml-1 text-lg">file_download</span>
-                    Export CSV
-                </button>
-<button class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary" type="button" onclick="loadLeads()">
-<span class="material-icons text-white mr-2 -ml-1 text-lg">refresh</span>
-                    Load Leads
-                </button>
-</div>
-</div>
-<div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-<div class="bg-card-light dark:bg-card-dark overflow-hidden shadow rounded-lg border border-border-light dark:border-border-dark">
-<div class="p-5">
-<div class="flex items-center">
-<div class="flex-shrink-0">
-<div class="bg-blue-100 dark:bg-blue-900 rounded-md p-3">
-<span class="material-icons text-primary dark:text-blue-300">groups</span>
-</div>
-</div>
-<div class="ml-5 w-0 flex-1">
-<dl>
-<dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Total Leads</dt>
-<dd>
-<div class="text-lg font-bold text-text-light dark:text-text-dark">{{ leads|length }}</div>
-</dd>
-</dl>
-</div>
-</div>
-</div>
-</div>
-<div class="bg-card-light dark:bg-card-dark overflow-hidden shadow rounded-lg border border-border-light dark:border-border-dark">
-<div class="p-5">
-<div class="flex items-center">
-<div class="flex-shrink-0">
-<div class="bg-green-100 dark:bg-green-900 rounded-md p-3">
-<span class="material-icons text-green-600 dark:text-green-300">email</span>
-</div>
-</div>
-<div class="ml-5 w-0 flex-1">
-<dl>
-<dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Verified Emails</dt>
-<dd>
-<div class="text-lg font-bold text-text-light dark:text-text-dark">{{ leads|length }}</div>
-</dd>
-</dl>
-</div>
-</div>
-</div>
-</div>
-<div class="bg-card-light dark:bg-card-dark overflow-hidden shadow rounded-lg border border-border-light dark:border-border-dark">
-<div class="p-5">
-<div class="flex items-center">
-<div class="flex-shrink-0">
-<div class="bg-purple-100 dark:bg-purple-900 rounded-md p-3">
-<span class="material-icons text-purple-600 dark:text-purple-300">phone</span>
-</div>
-</div>
-<div class="ml-5 w-0 flex-1">
-<dl>
-<dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Phone Numbers</dt>
-<dd>
-<div class="text-lg font-bold text-text-light dark:text-text-dark">4,021</div>
-</dd>
-</dl>
-</div>
-</div>
-</div>
-</div>
-<div class="bg-card-light dark:bg-card-dark overflow-hidden shadow rounded-lg border border-border-light dark:border-border-dark">
-<div class="p-5">
-<div class="flex items-center">
-<div class="flex-shrink-0">
-<div class="bg-yellow-100 dark:bg-yellow-900 rounded-md p-3">
-<span class="material-icons text-yellow-600 dark:text-yellow-300">star</span>
-</div>
-</div>
-<div class="ml-5 w-0 flex-1">
-<dl>
-<dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">New Today</dt>
-<dd>
-<div class="text-lg font-bold text-text-light dark:text-text-dark">+145</div>
-</dd>
-</dl>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="bg-card-light dark:bg-card-dark shadow rounded-lg border border-border-light dark:border-border-dark flex flex-col">
-<form method="get" class="p-4 border-b border-border-light dark:border-border-dark sm:flex sm:items-center sm:justify-between gap-4">
-<div class="flex-1 max-w-lg relative rounded-md shadow-sm">
-<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-<span class="material-icons text-gray-400 text-lg">search</span>
-</div>
-<input class="focus:ring-primary focus:border-primary block w-full pl-10 sm:text-sm border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 dark:text-white py-2" id="search" name="search" placeholder="Search by name, email, or username..." type="text" value="{{ request.GET.search }}"/>
-</div>
-<div class="mt-4 sm:mt-0 flex items-center space-x-3 w-full sm:w-auto flex-wrap">
-<div class="flex space-x-2 mb-2 sm:mb-0">
-<input class="block w-20 pl-2 pr-2 py-2 text-sm border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary focus:border-primary rounded-md bg-white dark:bg-gray-800 dark:text-white" id="min-followers" name="min_followers" placeholder="Min Followers" type="number" value="{{ request.GET.min_followers }}"/>
-<input class="block w-20 pl-2 pr-2 py-2 text-sm border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary focus:border-primary rounded-md bg-white dark:bg-gray-800 dark:text-white" id="max-followers" name="max_followers" placeholder="Max Followers" type="number" value="{{ request.GET.max_followers }}"/>
-</div>
-<select class="block w-full sm:w-32 pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-white dark:bg-gray-800 dark:text-white" id="status-filter" name="status">
-<option value="all">All Statuses</option>
-{% for choice in status_choices %}
-<option value="{{ choice }}" {% if request.GET.status == choice %}selected{% endif %}>{{ choice|title }}</option>
-{% endfor %}
-</select>
-<select class="block w-full sm:w-32 pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-white dark:bg-gray-800 dark:text-white" id="source-filter" name="source">
-<option value="all">All Sources</option>
-{% for source in source_accounts %}
-<option value="{{ source }}" {% if request.GET.source == source %}selected{% endif %}>{{ source }}</option>
-{% endfor %}
-</select>
-<select class="block w-full sm:w-32 pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-white dark:bg-gray-800 dark:text-white" id="verified-filter" name="is_verified">
-<option value="all">All Verified</option>
-<option value="true" {% if request.GET.is_verified == 'true' %}selected{% endif %}>Verified</option>
-<option value="false" {% if request.GET.is_verified == 'false' %}selected{% endif %}>Not Verified</option>
-</select>
-<button type="submit" class="px-4 py-2 bg-primary text-white rounded-md hover:bg-blue-600 transition-colors">Filter</button>
-</div>
-</form>
-<div class="overflow-x-auto">
-<table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-<thead class="bg-gray-50 dark:bg-gray-800/50">
-<tr>
-<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-10" scope="col">
-<input class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600" type="checkbox"/>
-</th>
-<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" scope="col">
-                                Lead Profile
-                            </th>
-<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" scope="col">
-                                Followers
-                            </th>
-<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" scope="col">
-                                Following
-                            </th>
-<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" scope="col">
-                                Posts
-                            </th>
-<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" scope="col">
-                                Bio
-                            </th>
-<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" scope="col">
-                                Source
-                            </th>
-<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" scope="col">
-                                Status
-                            </th>
-<th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" scope="col">
-                                Actions
-                            </th>
-</tr>
-</thead>
-<tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-{% for lead in leads %}
-<tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-<td class="px-6 py-4 whitespace-nowrap">
-<input class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600" type="checkbox"/>
-</td>
-<td class="px-6 py-4 whitespace-nowrap">
-<div class="flex items-center">
-<div class="h-10 w-10 flex-shrink-0">
-<div class="h-10 w-10 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 flex items-center justify-center text-white font-bold text-sm">
-{{ lead.ig_username|slice:":2"|upper }}
-</div>
-</div>
-<div class="ml-4">
-<div class="text-sm font-medium text-gray-900 dark:text-white">{{ lead.ig_username }}</div>
-<div class="text-sm text-gray-500 dark:text-gray-400">@{{ lead.ig_username }}</div>
-</div>
-</div>
-</td>
-<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-{{ lead.data.followers|default:"N/A" }}
-</td>
-<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-{{ lead.data.following|default:"N/A" }}
-</td>
-<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-{{ lead.data.posts|default:"N/A" }}
-</td>
-<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 max-w-xs truncate">
-{{ lead.data.bio|default:"No bio"|truncatechars:50 }}
-</td>
-<td class="px-6 py-4 whitespace-nowrap">
-<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-pink-100 text-pink-800 dark:bg-pink-900/50 dark:text-pink-200">
-<span class="w-1.5 h-1.5 mr-1.5 bg-pink-500 rounded-full"></span>
-{{ lead.source_account }}
-</span>
-</td>
-<td class="px-6 py-4 whitespace-nowrap">
-<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if lead.status == 'contacted' %}bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200{% else %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-200{% endif %}">
-{{ lead.get_status_display|default:lead.status }}
-</span>
-</td>
-<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-<button class="text-gray-400 hover:text-primary mx-1" onclick="sendDM({{ lead.id }})"><span class="material-icons text-lg">send</span></button>
-<button class="text-gray-400 hover:text-red-500 mx-1"><span class="material-icons text-lg">delete</span></button>
-</td>
-</tr>
-{% empty %}
-<tr>
-<td colspan="8" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">No leads found.</td>
-</tr>
-{% endfor %}
-</tbody>
-<tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-<td class="px-6 py-4 whitespace-nowrap">
-<input class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600" type="checkbox"/>
-</td>
-<td class="px-6 py-4 whitespace-nowrap">
-<div class="flex items-center">
-<div class="h-10 w-10 flex-shrink-0">
-<div class="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-gray-500 dark:text-gray-300 font-bold text-sm">
-                                            AR
-                                        </div>
-</div>
-<div class="ml-4">
-<div class="text-sm font-medium text-gray-900 dark:text-white">Alex Rogers</div>
-<div class="text-sm text-gray-500 dark:text-gray-400">@arogers</div>
-</div>
-</div>
-</td>
-<td class="px-6 py-4 whitespace-nowrap">
-<div class="text-sm text-gray-900 dark:text-white flex items-center mb-1">
-<span class="material-icons text-gray-400 text-xs mr-1">email</span>
-                                    alex@rogers.co
-                                </div>
-<div class="text-sm text-gray-500 dark:text-gray-400 flex items-center">
-<span class="material-icons text-gray-400 text-xs mr-1">phone</span>
-                                    +1 (555) 987-6543
-                                </div>
-</td>
-<td class="px-6 py-4 whitespace-nowrap">
-<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-800 dark:bg-sky-900/50 dark:text-sky-200">
-<span class="w-1.5 h-1.5 mr-1.5 bg-sky-500 rounded-full"></span>
-                                    Twitter
-                                </span>
-</td>
-<td class="px-6 py-4 whitespace-nowrap">
-<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
-                                    Inactive
-                                </span>
-</td>
-<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-<button class="text-gray-400 hover:text-primary mx-1" onclick="sendDM(1)"><span class="material-icons text-lg">send</span></button>
-<button class="text-gray-400 hover:text-red-500 mx-1"><span class="material-icons text-lg">delete</span></button>
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="bg-white dark:bg-gray-800 px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 sm:px-6 rounded-b-lg">
-<div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-<div>
-<p class="text-sm text-gray-700 dark:text-gray-300">
-                            Showing <span class="font-medium">1</span> to <span class="font-medium">{{ leads|length }}</span> of <span class="font-medium">{{ leads|length }}</span> results
-                        </p>
-</div>
-<div>
-<nav aria-label="Pagination" class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-<a class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700" href="#">
-<span class="sr-only">Previous</span>
-<span class="material-icons text-sm">chevron_left</span>
-</a>
-<a aria-current="page" class="z-10 bg-primary border-primary text-white relative inline-flex items-center px-4 py-2 border text-sm font-medium" href="#">1</a>
-<a class="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 relative inline-flex items-center px-4 py-2 border text-sm font-medium" href="#">2</a>
-<a class="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 relative inline-flex items-center px-4 py-2 border text-sm font-medium" href="#">3</a>
-<span class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300">...</span>
-<a class="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 relative inline-flex items-center px-4 py-2 border text-sm font-medium" href="#">10</a>
-<a class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700" href="#">
-<span class="sr-only">Next</span>
-<span class="material-icons text-sm">chevron_right</span>
-</a>
-</nav>
-</div>
-</div>
-</div>
-</div>
-</main>
-<footer class="bg-white dark:bg-gray-800 border-t border-border-light dark:border-border-dark mt-12">
-<div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-<p class="text-center text-sm text-gray-500 dark:text-gray-400">
-                © 2023 SaaS Bot Inc. All rights reserved.
-            </p>
-</div>
-</footer>
-<script>
-    function loadLeads() {
-        // Reload the page to refresh leads data
-        location.reload();
-    }
+{% extends 'base.html' %}
 
-    function sendDM(leadId) {
-        const accountId = '{{ ACCOUNT_ID }}';
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col md:flex-row justify-between items-end md:items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Lead Database</h1>
+            <p class="text-sm text-gray-500">Manage and export your collected prospects.</p>
+        </div>
+        <div class="flex space-x-3 mt-4 md:mt-0">
+            <button class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 bg-white">
+                <i class="ri-download-line mr-1"></i> Export CSV
+            </button>
+            <button class="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-blue-700 shadow-sm">
+                <i class="ri-add-line mr-1"></i> Add Manual Lead
+            </button>
+        </div>
+    </div>
 
-        fetch(`/api/account/${accountId}/start-outreach/`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
+    <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden" x-data="leadsTable()">
+        <div class="p-4 border-b border-gray-200 bg-gray-50 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="relative w-full md:w-96">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i class="ri-search-line text-gray-400"></i>
+                </div>
+                <input type="text" x-model="search" @input.debounce.500ms="fetchLeads()" class="block w-full pl-10 sm:text-sm border-gray-300 rounded-lg focus:ring-primary focus:border-primary border p-2" placeholder="Search leads...">
+            </div>
+        </div>
+
+        <div class="overflow-x-auto relative">
+            <div x-show="loading" class="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lead Profile</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact Info</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <template x-for="lead in leads" :key="lead.id">
+                        <tr class="hover:bg-gray-50 transition">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="h-10 w-10 rounded-full bg-gray-200 flex-shrink-0 flex items-center justify-center text-gray-500 font-bold">
+                                        <span x-text="lead.username.charAt(0).toUpperCase()"></span>
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-medium text-gray-900" x-text="lead.full_name || lead.username"></div>
+                                        <div class="text-sm text-gray-500" x-text="'@' + lead.username"></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900" x-text="lead.email || '--'"></div>
+                                <div class="text-xs text-gray-500" x-text="lead.phone || '--'"></div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    Instagram
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex px-2 text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                    New
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <button @click="sendDM(lead.id)" class="text-gray-400 hover:text-primary mx-1" title="Send DM">
+                                    <i class="ri-mail-send-line text-lg"></i>
+                                </button>
+                                <button class="text-gray-400 hover:text-red-600 mx-1">
+                                    <i class="ri-delete-bin-line text-lg"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="//unpkg.com/alpinejs" defer></script>
+<script>
+    function leadsTable() {
+        return {
+            leads: [],
+            loading: false,
+            search: '',
+            accountId: '{{ account_id }}', // ID de la cuenta inyectado por Django
+
+            init() {
+                this.fetchLeads();
             },
-            body: JSON.stringify({
-                account_id: accountId,
-                lead_id: leadId
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                log('DM sent successfully to lead ' + leadId);
-            } else {
-                log('Error: ' + data.message);
+
+            async fetchLeads() {
+                this.loading = true;
+                try {
+                    // Usamos el ID real de la cuenta
+                    const response = await fetch(`/api/account/${this.accountId}/leads/?search=${this.search}`);
+                    const data = await response.json();
+                    this.leads = data.results || data; // Ajuste según tu paginación
+                } catch (error) {
+                    console.error('Error fetching leads:', error);
+                } finally {
+                    this.loading = false;
+                }
+            },
+
+            async sendDM(leadId) {
+                if (!confirm('Send automated DM to this lead?')) return;
+                
+                try {
+                    const response = await fetch(`/api/account/${this.accountId}/start-outreach/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}' // Importante para POST en Django
+                        },
+                        body: JSON.stringify({ lead_id: leadId })
+                    });
+                    const result = await response.json();
+                    alert(result.status || result.error);
+                } catch (error) {
+                    alert('Error sending command');
+                }
             }
-        })
-        .catch(error => {
-            log('Error sending DM: ' + error);
-        });
-    }
-
-    function log(message) {
-        console.log('[SaaS Bot]', message);
+        }
     }
 </script>
-
-</body></html>
+{% endblock %}
