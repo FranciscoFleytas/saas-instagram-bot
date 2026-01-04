@@ -1,37 +1,15 @@
 from celery import shared_task
-from django.utils import timezone
 import logging
 import random
 import google.generativeai as genai
-from datetime import timedelta
 import time
 
 # Importamos los Modelos
-from automation.models import IGAccount, Lead, Agency
-
-# Importamos Motores
-from automation.engine.bot_scraper import ScraperBot
-from automation.engine.bot_outreach import OutreachBot
-from automation.engine.bot_comment import CommentBot
-# IMPORTANTE: Importamos el nuevo motor rápido
-from automation.engine.bot_scraper_fast import FastScraperBot
+from automation.models import IGAccount, Agency
 
 # Configuración
 logger = logging.getLogger(__name__)
 GENAI_API_KEY = "AIzaSyBNb446tcr2Ol80gmrz0_5ue9M_uO451CA" # Tu API Key
-
-# ==============================================================================
-# UTILIDADES
-# ==============================================================================
-def get_proxy_dict(account):
-    if hasattr(account, 'proxy') and account.proxy:
-        return {
-            'host': account.proxy.ip_address,
-            'port': account.proxy.port,
-            'user': account.proxy.username,
-            'pass': account.proxy.password
-        }
-    return None
 
 def generate_api_comment(user_prompt, user_persona):
     """
@@ -59,117 +37,8 @@ def generate_api_comment(user_prompt, user_persona):
         return "Great post! 🔥"
 
 # ==============================================================================
-# TAREA 1: SCRAPING HÍBRIDO (API + SELENIUM)
 # ==============================================================================
-@shared_task(bind=True)
-def task_run_scraping(self, account_id, target_username, max_leads=50, use_fast_mode=False):
-    """
-    Orquestador de Scraping. Soporta 'use_fast_mode' para usar el Enjambre.
-    """
-    mode_str = "⚡ API (ENJAMBRE)" if use_fast_mode else "🐢 VISUAL (SELENIUM)"
-    logger.info(f"[TASK SCRAPE] Modo: {mode_str} | Objetivo: @{target_username}")
-    
-    try:
-        client_account = IGAccount.objects.get(id=account_id)
-    except IGAccount.DoesNotExist:
-        return "ERROR_CLIENT_ACCOUNT_NOT_FOUND"
-
-    max_retries = 3
-    
-    for attempt in range(1, max_retries + 1):
-        try:
-            # 1. SELECCIÓN DE CUENTA (Pool de Rotación)
-            account_to_use = client_account
-            try:
-                pool_agency = Agency.objects.filter(name="Imported Scrapers Pool").first()
-                if pool_agency:
-                    # Elegir scraper aleatorio
-                    random_scraper = IGAccount.objects.filter(agency=pool_agency, status='active').order_by('?').first()
-                    if random_scraper:
-                        account_to_use = random_scraper
-                        logger.info(f"[INTENTO {attempt}] 🛡️ Usando identidad: {account_to_use.username}")
-            except Exception as e:
-                logger.error(f"[POOL ERROR] {e}")
-
-            proxy_data = get_proxy_dict(account_to_use)
-            start_time = timezone.now()
-            
-            # 2. EJECUCIÓN SEGÚN MODO
-            if use_fast_mode:
-                # --- MODO RÁPIDO (API) ---
-                bot = FastScraperBot(account_to_use, proxy_data)
-                
-                # Login inteligente (Cookie -> Pass)
-                if not bot.login():
-                    raise Exception("Fallo Login API")
-                
-                # Ejecutar extracción
-                msg = bot.run(target_username, max_leads)
-                logger.info(f"[API RESULT] {msg}")
-
-            else:
-                # --- MODO VISUAL (Selenium) ---
-                user_filters = client_account.config.get('filters', None)
-                bot = ScraperBot(account_to_use, proxy_data, filters=user_filters)
-                bot.run_scraping_task(target_profile=target_username, max_leads=max_leads)
-                if hasattr(bot, 'quit'): bot.quit()
-
-            # 3. VERIFICACIÓN Y PREMIUM
-            new_leads = Lead.objects.filter(source_account=target_username, created_at__gte=start_time, status='to_contact')
-            count = new_leads.count()
-            
-            if count > 0:
-                logger.info(f"[EXITO] {count} leads recolectados.")
-                
-                # Auto-DM Check
-                if client_account.config.get('automation', {}).get('enable_autodm', False):
-                    for lead in new_leads:
-                        current_delay = random.randint(20, 60)
-                        task_run_outreach.apply_async(args=[account_id, lead.id], countdown=current_delay * 60)
-                    return f"SUCCESS_PREMIUM: {count} leads"
-                
-                return f"SUCCESS: {count} leads"
-            else:
-                if use_fast_mode: raise Exception("Cero leads en modo API (Posible bloqueo o target privado)")
-                return "SUCCESS: 0 leads (Check filters)"
-
-        except Exception as e:
-            logger.error(f"[INTENTO {attempt} FALLIDO] {e}")
-            if attempt == max_retries: return f"ERROR_FINAL: {e}"
-            time.sleep(5)
-            continue
-            
-    return "ERROR_UNKNOWN"
-
-# ==============================================================================
-# TAREA 2: OUTREACH
-# ==============================================================================
-@shared_task(bind=True)
-def task_run_outreach(self, account_id, lead_id):
-    bot = None
-    try:
-        account = IGAccount.objects.get(id=account_id)
-        lead = Lead.objects.get(id=lead_id)
-        
-        if lead.status == 'contacted': return "ALREADY_CONTACTED"
-
-        proxy_data = get_proxy_dict(account)
-        bot = OutreachBot(account_data=account, proxy_data=proxy_data)
-        
-        if bot.send_dm_to_lead(lead_id=lead.id):
-            return f"DM_SENT_{lead.ig_username}"
-        return "DM_FAILED"
-
-    except Exception as e:
-        logger.error(f"[OUTREACH ERROR] {e}")
-        return f"ERROR: {e}"
-    finally:
-        if bot: 
-            try: bot.quit()
-            except: pass
-
-# ==============================================================================
-# TAREA 3: ENGAGEMENT (MODO ENJAMBRE / SWARM) - COMPLETA
+# TAREA: ENGAGEMENT (MODO ENJAMBRE / SWARM)
 # ==============================================================================
 @shared_task(bind=True)
 def task_run_comment(self, account_id, post_url, do_like=True, do_save=False, do_comment=True, 
@@ -203,8 +72,7 @@ def task_run_comment(self, account_id, post_url, do_like=True, do_save=False, do
                 try:
                     logger.info(f"[SWARM] ➡️ Turno de: {farm_acc.username}")
                     
-                    proxy_data = get_proxy_dict(farm_acc)
-                    bot = FastInteractionBot(farm_acc, proxy_data)
+                    bot = FastInteractionBot(farm_acc, proxy_data=None)
                     
                     if not bot.login():
                         logger.warning(f"   [SKIP] Falló login de {farm_acc.username}")
@@ -239,10 +107,9 @@ def task_run_comment(self, account_id, post_url, do_like=True, do_save=False, do
         else:
             logger.info(f"[TASK] Usando MODO VISUAL (Selenium) para {post_url}")
             client_account = IGAccount.objects.get(id=account_id)
-            proxy_data = get_proxy_dict(client_account)
             
             from automation.engine.bot_comment import CommentBot 
-            bot = CommentBot(account_data=client_account, proxy_data=proxy_data)
+            bot = CommentBot(account_data=client_account, proxy_data=None)
             
             success = bot.execute_interaction(
                 post_url=post_url, do_like=do_like, do_save=do_save, do_comment=do_comment,

@@ -1,0 +1,115 @@
+import json
+from django.http import JsonResponse, HttpResponseNotAllowed
+from django.views.decorators.csrf import csrf_exempt
+
+from .models import IGAccount, InteractionCampaign, InteractionTask
+
+
+def _json(request):
+    try:
+        return json.loads(request.body.decode("utf-8") or "{}")
+    except Exception:
+        return {}
+
+
+@csrf_exempt
+def bots_list_create(request):
+    if request.method == "GET":
+        qs = IGAccount.objects.all().order_by("-created_at")
+        data = []
+        for b in qs:
+            # soporta session_id o cookies (depende tu modelo real)
+            session_id = getattr(b, "session_id", None)
+            cookies = getattr(b, "cookies", None)
+            data.append({
+                "id": str(b.id),
+                "username": b.username,
+                "status": b.status,
+                "session_id": session_id or "",
+                "cookies": cookies or "",
+                "created_at": b.created_at.isoformat() if getattr(b, "created_at", None) else None,
+            })
+        return JsonResponse(data, safe=False)
+
+    if request.method == "POST":
+        body = _json(request)
+        username = (body.get("username") or "").strip()
+        if not username:
+            return JsonResponse({"error": "username is required"}, status=400)
+
+        bot = IGAccount.objects.create(
+            agency_id=body.get("agency_id"),  # si viene
+            username=username,
+            status=body.get("status") or "ACTIVE",
+        )
+
+        # guardar session_id/cookies si existe en tu modelo
+        if "session_id" in body and hasattr(bot, "session_id"):
+            bot.session_id = body.get("session_id") or ""
+        if "cookies" in body and hasattr(bot, "cookies"):
+            bot.cookies = body.get("cookies") or ""
+
+        bot.save()
+        return JsonResponse({"id": str(bot.id)}, status=201)
+
+    return HttpResponseNotAllowed(["GET", "POST"])
+
+
+@csrf_exempt
+def bots_patch(request, bot_id):
+    if request.method != "PATCH":
+        return HttpResponseNotAllowed(["PATCH"])
+
+    body = _json(request)
+    bot = IGAccount.objects.get(id=bot_id)
+
+    if "status" in body:
+        bot.status = body["status"]
+
+    if "session_id" in body and hasattr(bot, "session_id"):
+        bot.session_id = body["session_id"] or ""
+
+    if "cookies" in body and hasattr(bot, "cookies"):
+        bot.cookies = body["cookies"] or ""
+
+    bot.save()
+    return JsonResponse({"ok": True})
+
+
+def campaigns_list(request):
+    if request.method != "GET":
+        return HttpResponseNotAllowed(["GET"])
+
+    qs = InteractionCampaign.objects.all().order_by("-created_at")
+    data = [{
+        "id": str(c.id),
+        "name": c.name,
+        "status": c.status,
+        "action": c.action,
+        "created_at": c.created_at.isoformat() if c.created_at else None,
+    } for c in qs]
+    return JsonResponse(data, safe=False)
+
+
+def tasks_list(request):
+    if request.method != "GET":
+        return HttpResponseNotAllowed(["GET"])
+
+    campaign_id = request.GET.get("campaign_id")
+    qs = InteractionTask.objects.all().order_by("-created_at")
+    if campaign_id:
+        qs = qs.filter(campaign_id=campaign_id)
+
+    data = []
+    for t in qs:
+        data.append({
+            "id": str(t.id),
+            "campaign_id": str(t.campaign_id) if t.campaign_id else None,
+            "ig_account_id": str(t.ig_account_id) if t.ig_account_id else None,
+            "action": t.action,
+            "status": t.status,
+            "attempts": t.attempts,
+            "result_message": t.result_message,
+            "error_code": t.error_code,
+        })
+    return JsonResponse(data, safe=False)

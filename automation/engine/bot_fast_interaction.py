@@ -2,7 +2,11 @@ import time
 import random
 import logging
 from instagrapi import Client
-from automation.models import SystemLog
+
+try:
+    from automation.models import SystemLog
+except Exception:
+    SystemLog = None
 
 logger = logging.getLogger(__name__)
 
@@ -24,9 +28,11 @@ class FastInteractionBot:
     def log(self, msg, level='info'):
         """Escribe en la terminal y en la base de datos"""
         print(f"[{level.upper()}] {msg}")
-        try:
-            SystemLog.objects.create(level=level, message=msg)
-        except: pass
+        if SystemLog:
+            try:
+                SystemLog.objects.create(level=level, message=msg)
+            except Exception:
+                logger.debug("No se pudo registrar SystemLog; modelo no disponible o error en DB.")
 
     def login(self):
         self.log(f"🛡️ Verificando identidad de {self.account.username}...", 'info')

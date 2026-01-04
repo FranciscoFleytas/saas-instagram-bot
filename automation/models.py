@@ -1,99 +1,92 @@
-from django.db import models
-
+# automation/models.py
 import uuid
 from django.db import models
-from cryptography.fernet import Fernet
-from django.conf import settings
-
-# Clave de encriptación (En producción, mover a variables de entorno)
-# Generar una con: Fernet.generate_key()
-ENCRYPTION_KEY = settings.ENCRYPTION_KEY
 
 class Agency(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=255)
-    plan_level = models.CharField(max_length=50, choices=[('basic', 'Basic'), ('pro', 'Pro')], default='basic')
-    payment_status = models.CharField(max_length=20, default='unpaid')
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return self.name
-
-class Proxy(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    ip_address = models.GenericIPAddressField()
-    port = models.IntegerField()
-    username = models.CharField(max_length=100)
-    password = models.CharField(max_length=100)
+    name = models.TextField()
+    plan_level = models.TextField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField()
 
-    def __str__(self):
-        return f"{self.ip_address}:{self.port}"
+    class Meta:
+        db_table = "agencies"
+        managed = False  # MUY IMPORTANTE: Django no intenta crear/alterar esta tabla
+
 
 class IGAccount(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    agency = models.ForeignKey(Agency, on_delete=models.CASCADE)
-    username = models.CharField(max_length=100, unique=True)
-    last_used = models.DateTimeField(null=True, blank=True, help_text="Marca de tiempo para calcular enfriamiento")
-    
-    # Almacenamos la contraseña encriptada como bytes o string base64
-    password_encrypted = models.BinaryField() 
-    
-    session_id = models.TextField(null=True, blank=True)
-    proxy = models.ForeignKey(Proxy, on_delete=models.SET_NULL, null=True)
-    status = models.CharField(max_length=50, default='active') # active, challenge, banned
-    
-    # Configuración del Bot (JSONB)
-    config = models.JSONField(default=dict) # Ej: {"auto_dm": True, "target_niche": "Real Estate"}
+    agency = models.ForeignKey(Agency, on_delete=models.CASCADE, db_column="agency_id")
+    username = models.TextField()
+    status = models.TextField(default="ACTIVE")
+    session_id = models.TextField(null=True, blank=True)  # ajusta el nombre si en DB se llama distinto
+    created_at = models.DateTimeField()
 
-    def set_password(self, raw_password):
-        f = Fernet(ENCRYPTION_KEY)
-        self.password_encrypted = f.encrypt(raw_password.encode())
-
-    def get_password(self):
-        """
-        Desencripta la contraseña manejando la compatibilidad con PostgreSQL.
-        """
-        if not self.password_encrypted:
-            return None
-            
-        try:
-            f = Fernet(ENCRYPTION_KEY)
-            
-            # CORRECCIÓN CRÍTICA PARA POSTGRESQL:
-            data = self.password_encrypted
-            # Si viene como memoryview (Postgres), lo forzamos a bytes
-            if isinstance(data, memoryview):
-                data = bytes(data)
-            # Si ya es bytes (SQLite), lo dejamos igual
-            
-            return f.decrypt(data).decode()
-        except Exception as e:
-            print(f"Error desencriptando password para {self.username}: {e}")
-            return None
-
-class Lead(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    source_account = models.CharField(max_length=100) # Desde qué cuenta se extrajo
-    ig_username = models.CharField(max_length=100, unique=True)
-    
-    # Datos scrapeados (Seguidores, Bio, Engagement)
-    data = models.JSONField(default=dict)
-    
-    # CRM Status
-    status = models.CharField(max_length=50, default='to_contact') # to_contact, contacted, interested
-    created_at = models.DateTimeField(auto_now_add=True)
-
-class SystemLog(models.Model):
-    LEVEL_CHOICES = [
-        ('info', 'INFO'),
-        ('warn', 'WARNING'),
-        ('error', 'ERROR'),
-        ('success', 'SUCCESS'),
+    class Meta:
+        db_table = "ig_accounts"
+        managed = False
+# automation/models.py (mismo archivo)
+class InteractionCampaign(models.Model):
+    ACTION_CHOICES = [("LIKE", "LIKE"), ("COMMENT", "COMMENT")]
+    STATUS_CHOICES = [
+        ("DRAFT", "DRAFT"), ("QUEUED", "QUEUED"), ("RUNNING", "RUNNING"),
+        ("PAUSED", "PAUSED"), ("DONE", "DONE"), ("FAILED", "FAILED"),
     ]
-    level = models.CharField(max_length=10, choices=LEVEL_CHOICES, default='info')
-    message = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
-        return f"[{self.level.upper()}] {self.message}"
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    agency = models.ForeignKey(Agency, on_delete=models.CASCADE, db_column="agency_id")
+    name = models.CharField(max_length=200, default="Campaign")
+    action = models.CharField(max_length=10, choices=ACTION_CHOICES)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="QUEUED")
+
+    post_urls = models.JSONField(default=list)  # ["https://instagram.com/p/.../", ...]
+    comment_mode = models.CharField(max_length=10, null=True, blank=True)  # TEMPLATE/AI (opcional)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "interaction_campaigns"
+
+
+class InteractionTask(models.Model):
+    ACTION_CHOICES = [("LIKE", "LIKE"), ("COMMENT", "COMMENT")]
+    STATUS_CHOICES = [
+        ("PENDING", "PENDING"), ("IN_PROGRESS", "IN_PROGRESS"),
+        ("SUCCESS", "SUCCESS"), ("ERROR", "ERROR"), ("RETRY", "RETRY"),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    campaign = models.ForeignKey(InteractionCampaign, on_delete=models.CASCADE, db_column="campaign_id")
+    agency = models.ForeignKey(Agency, on_delete=models.CASCADE, db_column="agency_id")
+    ig_account = models.ForeignKey(IGAccount, on_delete=models.CASCADE, db_column="ig_account_id")
+
+    action = models.CharField(max_length=10, choices=ACTION_CHOICES)
+    post_url = models.TextField()
+    comment_text = models.TextField(null=True, blank=True)
+
+    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default="PENDING")
+    attempts = models.IntegerField(default=0)
+    next_retry_at = models.DateTimeField(null=True, blank=True)
+
+    error_code = models.CharField(max_length=50, null=True, blank=True)
+    result_message = models.TextField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "interaction_tasks"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["campaign", "ig_account", "action", "post_url"],
+                name="uq_task_unique_action",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["campaign"]),
+            models.Index(fields=["status", "next_retry_at"]),
+            models.Index(fields=["ig_account"]),
+        ]
