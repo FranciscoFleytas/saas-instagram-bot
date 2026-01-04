@@ -37,7 +37,11 @@ class Command(BaseCommand):
             defaults={
                 "action": "COMMENT",
                 "status": "QUEUED",
+                "target_url": "https://www.instagram.com/p/XXXX/",
+                "bot_count": len(accounts),
                 "post_urls": ["https://www.instagram.com/p/XXXX/"],
+                "comment_mode": "MANUAL",
+                "manual_comments": "🔥 Excelente post!",
             },
         )
 

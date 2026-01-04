@@ -3,20 +3,20 @@ import logging
 import random
 import google.generativeai as genai
 import time
+from django.conf import settings
 
 # Importamos los Modelos
 from automation.models import IGAccount, Agency
 
 # Configuración
 logger = logging.getLogger(__name__)
-GENAI_API_KEY = "AIzaSyBNb446tcr2Ol80gmrz0_5ue9M_uO451CA" # Tu API Key
 
 def generate_api_comment(user_prompt, user_persona):
     """
     Genera un comentario usando Gemini para el Modo API.
     """
     try:
-        genai.configure(api_key=GENAI_API_KEY)
+        genai.configure(api_key=settings.GEMINI_API_KEY)
         model = genai.GenerativeModel('gemini-2.5-flash')
 
         persona_str = f"IDENTITY: {user_persona}" if user_persona else "IDENTITY: Expert Social Media User."

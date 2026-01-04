@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 
 from automation.engine.bot_fast_interaction import FastInteractionBot
 from automation.models import InteractionTask
+from automation.ai_comments import generate_ai_comment
 
 logger = logging.getLogger(__name__)
 
@@ -24,13 +25,24 @@ def _map_error_code(exc: Exception) -> str:
 
 def normalize_ig_url(url: str) -> str:
     """
-    Limpia URLs de Instagram:
-    - elimina parámetros (?img_index, utm, etc.)
-    - asegura trailing slash
+    Normaliza URLs de Instagram a formato https://www.instagram.com/p/{CODE}/
+    limpiando parámetros y exceso de path.
     """
-    parsed = urlparse((url or "").strip())
-    clean = f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
-    return clean if clean.endswith("/") else clean + "/"
+    raw = (url or "").strip()
+    if not raw:
+        return ""
+
+    normalized_input = raw if raw.startswith("http") else f"https://{raw.lstrip('/')}"
+    parsed = urlparse(normalized_input)
+
+    netloc = parsed.netloc or "www.instagram.com"
+    parts = [p for p in parsed.path.split("/") if p]
+
+    resource = parts[0] if len(parts) >= 2 else "p"
+    code = parts[1] if len(parts) >= 2 else (parts[0] if parts else "")
+    path = f"/{resource}/{code}/" if code else (parsed.path if parsed.path.endswith("/") else f"{parsed.path}/")
+
+    return f"https://{netloc}{path}"
 
 
 def execute_task(task: InteractionTask) -> Dict[str, Optional[str]]:
@@ -45,29 +57,48 @@ def execute_task(task: InteractionTask) -> Dict[str, Optional[str]]:
     }
     """
     try:
+        action = (task.action or "").upper()
+        campaign = getattr(task, "campaign", None)
+        post_url = normalize_ig_url(task.post_url)
+        if post_url and post_url != task.post_url:
+            task.post_url = post_url
+            task.save(update_fields=["post_url"])
+
+        def _log_result(status_label: str):
+            logger.info(
+                "interaction_task_completed task_id=%s account=%s action=%s url=%s status=%s attempts=%s",
+                getattr(task, "id", "?"),
+                getattr(getattr(task, "ig_account", None), "username", "?"),
+                action,
+                post_url,
+                status_label,
+                getattr(task, "attempts", "?"),
+            )
+
         # --- Validar session_id ---
         session_id = (getattr(task.ig_account, "session_id", None) or "").strip()
         if not session_id:
-            return {
+            result = {
                 "success": False,
                 "error_code": "LOGIN",
                 "message": "Missing session_id on IGAccount. Paste session_id extracted from browser cookies.",
             }
-
-        # Normalizar URL (FIX CRÍTICO)
-        post_url = normalize_ig_url(task.post_url)
+            _log_result("ERROR")
+            return result
 
         # Inicializar bot
         bot = FastInteractionBot(task.ig_account, proxy_data=None)
 
         if not bot.login():
-            return {
+            result = {
                 "success": False,
                 "error_code": "LOGIN",
                 "message": "Login failed (invalid/expired session_id or checkpoint required).",
             }
+            _log_result("ERROR")
+            return result
 
-        action = (task.action or "").upper()
+        mode = ""
 
         # --- Ejecutar acción ---
         if action == "LIKE":
@@ -79,8 +110,28 @@ def execute_task(task: InteractionTask) -> Dict[str, Optional[str]]:
 
         elif action == "COMMENT":
             comment_text = (task.comment_text or "").strip()
+
+            mode = (getattr(campaign, "comment_mode", "") or "").upper() if campaign else ""
+
             if not comment_text:
-                comment_text = "🔥 Nice post!"
+                if mode == "AI":
+                    generated = generate_ai_comment(
+                        post_url=post_url,
+                        persona=getattr(campaign, "ai_persona", ""),
+                        tone=getattr(campaign, "ai_tone", ""),
+                        user_prompt=getattr(campaign, "ai_user_prompt", ""),
+                        use_image_context=getattr(campaign, "ai_use_image_context", False),
+                    )
+                    comment_text = generated or "Great post!"
+                    task.comment_text = comment_text
+                    task.result_message = f"AI generated comment for {post_url}: {comment_text}"
+                    task.save(update_fields=["comment_text", "result_message"])
+                else:
+                    comment_text = "🔥 Nice post!"
+                    warning = "Comentario manual faltante; se usó fallback seguro."
+                    task.comment_text = comment_text
+                    task.result_message = warning
+                    task.save(update_fields=["comment_text", "result_message"])
 
             ok = bot.execute(
                 post_url,
@@ -90,29 +141,42 @@ def execute_task(task: InteractionTask) -> Dict[str, Optional[str]]:
             )
 
         else:
-            return {
+            result = {
                 "success": False,
                 "error_code": "UNKNOWN",
                 "message": f"Unsupported action: {task.action}",
             }
+            _log_result("ERROR")
+            return result
 
         if ok:
-            return {
+            success_message = "Task executed successfully"
+            if action == "COMMENT":
+                prefix = "AI comment executed" if mode == "AI" else "Comment executed"
+                success_message = f"{prefix}: {comment_text}"
+            result = {
                 "success": True,
                 "error_code": None,
-                "message": "Task executed successfully",
+                "message": success_message,
+            }
+        else:
+            result = {
+                "success": False,
+                "error_code": "UNKNOWN",
+                "message": "Bot execution returned failure",
             }
 
-        return {
-            "success": False,
-            "error_code": "UNKNOWN",
-            "message": "Bot execution returned failure",
-        }
+        _log_result("SUCCESS" if result["success"] else "ERROR")
+        return result
 
     except Exception as exc:
         logger.exception(
-            "Error executing InteractionTask %s",
+            "Error executing InteractionTask %s account=%s action=%s url=%s attempts=%s",
             getattr(task, "id", "?"),
+            getattr(getattr(task, "ig_account", None), "username", "?"),
+            getattr(task, "action", "?"),
+            getattr(task, "post_url", "?"),
+            getattr(task, "attempts", "?"),
         )
         return {
             "success": False,

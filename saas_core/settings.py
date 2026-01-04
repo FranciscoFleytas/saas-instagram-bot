@@ -113,3 +113,5 @@ STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')

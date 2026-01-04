@@ -28,6 +28,7 @@ class IGAccount(models.Model):
 # automation/models.py (mismo archivo)
 class InteractionCampaign(models.Model):
     ACTION_CHOICES = [("LIKE", "LIKE"), ("COMMENT", "COMMENT")]
+    COMMENT_MODE_CHOICES = [("AI", "AI"), ("MANUAL", "MANUAL")]
     STATUS_CHOICES = [
         ("DRAFT", "DRAFT"), ("QUEUED", "QUEUED"), ("RUNNING", "RUNNING"),
         ("PAUSED", "PAUSED"), ("DONE", "DONE"), ("FAILED", "FAILED"),
@@ -39,8 +40,21 @@ class InteractionCampaign(models.Model):
     action = models.CharField(max_length=10, choices=ACTION_CHOICES)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="QUEUED")
 
+    target_url = models.URLField()
+    bot_count = models.PositiveIntegerField(default=1)
     post_urls = models.JSONField(default=list)  # ["https://instagram.com/p/.../", ...]
-    comment_mode = models.CharField(max_length=10, null=True, blank=True)  # TEMPLATE/AI (opcional)
+    comment_mode = models.CharField(
+        max_length=10,
+        choices=COMMENT_MODE_CHOICES,
+        default="MANUAL",
+        blank=True,
+        null=False,
+    )
+    manual_comments = models.TextField(blank=True, default="")
+    ai_persona = models.CharField(max_length=255, blank=True)
+    ai_tone = models.CharField(max_length=100, blank=True)
+    ai_user_prompt = models.TextField(blank=True)
+    ai_use_image_context = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True)
     started_at = models.DateTimeField(null=True, blank=True)

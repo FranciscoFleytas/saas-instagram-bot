@@ -159,7 +159,11 @@ def campaigns_list_create(request):
                 name=body.get("name") or f"Campaign {now().strftime('%Y-%m-%d %H:%M')}",
                 status="QUEUED",
                 action=action,
+                target_url=post_url,
+                bot_count=len(ig_account_ids),
                 post_urls=[post_url],
+                comment_mode="MANUAL",
+                manual_comments=comment_text,
             )
 
             bots = IGAccount.objects.filter(id__in=ig_account_ids)
