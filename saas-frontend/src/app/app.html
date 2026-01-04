@@ -1,0 +1,14 @@
+<div class="min-h-screen bg-background-light text-text-light flex">
+  <app-sidebar class="hidden md:block"></app-sidebar>
+  <div class="flex-1 min-h-screen flex flex-col">
+    <header class="md:hidden bg-white px-4 py-3 shadow-sm flex items-center justify-between">
+      <div class="font-semibold text-lg text-primary">SaaSBot</div>
+      <button class="p-2 rounded-lg border border-gray-200 text-gray-500">
+        <span class="material-icons">menu</span>
+      </button>
+    </header>
+    <main class="flex-1 px-4 md:px-8 py-6">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>
