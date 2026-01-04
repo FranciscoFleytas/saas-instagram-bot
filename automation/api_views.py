@@ -24,7 +24,7 @@ def bots_list_create(request):
                 "id": str(b.id),
                 "username": b.username,
                 "status": b.status,
-                "session_id": getattr(b, "session_id", "") or "",
+                "has_session_id": bool(getattr(b, "session_id", "") or ""),
                 "created_at": b.created_at.isoformat() if getattr(b, "created_at", None) else None,
             }
             for b in bots
