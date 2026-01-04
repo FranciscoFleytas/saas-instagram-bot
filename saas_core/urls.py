@@ -1,8 +1,8 @@
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import include, path
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    # Redirige todo el tráfico a la app de automation
-    path('', include('automation.urls')),
+    path("admin/", admin.site.urls),
+    # Delega todo el tráfico a la app automation
+    path("", include("automation.urls")),
 ]
