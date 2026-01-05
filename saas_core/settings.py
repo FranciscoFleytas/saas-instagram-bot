@@ -115,3 +115,13 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
+
+# =========================
+# Bright Data Proxy (global fallback)
+# =========================
+_BRD_ENABLED_RAW = os.getenv("BRIGHTDATA_PROXY_ENABLED", "0")
+BRIGHTDATA_PROXY_ENABLED = str(_BRD_ENABLED_RAW).lower() in {"1", "true", "yes", "on"}
+BRIGHTDATA_PROXY_HOST = os.getenv("BRIGHTDATA_PROXY_HOST", "")
+BRIGHTDATA_PROXY_PORT = os.getenv("BRIGHTDATA_PROXY_PORT", "")
+BRIGHTDATA_PROXY_USER = os.getenv("BRIGHTDATA_PROXY_USER", "")
+BRIGHTDATA_PROXY_PASSWORD = os.getenv("BRIGHTDATA_PROXY_PASSWORD", "")

@@ -12,7 +12,19 @@ class AgencyAdmin(admin.ModelAdmin):
 
 @admin.register(IGAccount)
 class IGAccountAdmin(admin.ModelAdmin):
-    list_display = ('username', 'agency', 'status')
+    list_display = ("username", "status", "agency", "has_proxy", "created_at")
+    list_filter = ("status", "agency")
+    search_fields = ("username",)
+
+    fieldsets = (
+        (None, {"fields": ("agency", "username", "status", "session_id")}),
+        ("Proxy (opcional)", {"fields": ("proxy_host", "proxy_port", "proxy_user", "proxy_password")}),
+    )
+
+    def has_proxy(self, obj):
+        return bool(obj.proxy_host and obj.proxy_port)
+    has_proxy.boolean = True
+
 
 
 @admin.register(InteractionCampaign)

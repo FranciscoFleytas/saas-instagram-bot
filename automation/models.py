@@ -20,6 +20,10 @@ class IGAccount(models.Model):
     username = models.TextField()
     status = models.TextField(default="ACTIVE")
     session_id = models.TextField(null=True, blank=True)  # ajusta el nombre si en DB se llama distinto
+    proxy_host = models.CharField(max_length=255, blank=True, default="")
+    proxy_port = models.PositiveIntegerField(null=True, blank=True)
+    proxy_user = models.CharField(max_length=255, blank=True, default="")
+    proxy_password = models.CharField(max_length=255, blank=True, default="")
     created_at = models.DateTimeField()
 
     class Meta:

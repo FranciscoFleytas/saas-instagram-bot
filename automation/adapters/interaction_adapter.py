@@ -44,6 +44,36 @@ def normalize_ig_url(url: str) -> str:
 
     return f"https://{netloc}{path}"
 
+def _get_proxy_data_from_account(ig_account) -> Optional[Dict[str, str]]:
+    """
+    Devuelve proxy_data compatible con FastInteractionBot si IGAccount tiene proxy configurado.
+    Requiere campos en IGAccount:
+      - proxy_host (str)
+      - proxy_port (int)
+      - proxy_user (str)
+      - proxy_password (str)
+    """
+    host = (getattr(ig_account, "proxy_host", "") or "").strip()
+    port = getattr(ig_account, "proxy_port", None)
+    user = (getattr(ig_account, "proxy_user", "") or "").strip()
+    password = (getattr(ig_account, "proxy_password", "") or "").strip()
+
+    if not host or not port:
+        return None
+
+    return {
+        "host": host,
+        "port": str(port),
+        "user": user,
+        "password": password,
+    }
+
+
+def _proxy_label(proxy_data: Optional[Dict[str, str]]) -> str:
+    if not proxy_data:
+        return "none"
+    return f"{proxy_data.get('host')}:{proxy_data.get('port')}"
+
 
 def execute_task(task: InteractionTask) -> Dict[str, Optional[str]]:
     """
@@ -87,7 +117,16 @@ def execute_task(task: InteractionTask) -> Dict[str, Optional[str]]:
             return result
 
         # Inicializar bot
-        bot = FastInteractionBot(task.ig_account, proxy_data=None)
+        proxy_data = _get_proxy_data_from_account(task.ig_account)
+        logger.info(
+            "interaction_task_proxy task_id=%s account=%s proxy=%s",
+            getattr(task, "id", "?"),
+            getattr(getattr(task, "ig_account", None), "username", "?"),
+            _proxy_label(proxy_data),
+        )
+
+        bot = FastInteractionBot(task.ig_account, proxy_data=proxy_data)
+
 
         if not bot.login():
             result = {

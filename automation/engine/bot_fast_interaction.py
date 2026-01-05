@@ -1,7 +1,9 @@
 import time
 import random
 import logging
+from typing import Optional, Dict
 from instagrapi import Client
+from django.conf import settings
 
 try:
     from automation.models import SystemLog
@@ -9,6 +11,56 @@ except Exception:
     SystemLog = None
 
 logger = logging.getLogger(__name__)
+
+
+def build_proxy_url(proxy_data: Optional[Dict[str, str]]) -> Optional[str]:
+    """
+    Construye una URL de proxy http://user:pass@host:port
+    Devuelve None si host o port están ausentes.
+    """
+    if not proxy_data:
+        return None
+
+    host = (proxy_data.get("host") or "").strip()
+    port = proxy_data.get("port")
+    user = (proxy_data.get("user") or "").strip()
+    password = (proxy_data.get("password") or "").strip()
+
+    if not host or not port:
+        return None
+
+    try:
+        port_str = str(port).strip()
+    except Exception:
+        return None
+
+    if not port_str:
+        return None
+
+    auth = ""
+    if user:
+        auth = f"{user}:{password}@" if password else f"{user}@"
+
+    return f"http://{auth}{host}:{port_str}"
+
+
+def _get_default_proxy_data() -> Optional[Dict[str, str]]:
+    """
+    Devuelve proxy_data desde settings si BRIGHTDATA_PROXY_ENABLED está activo.
+    """
+    if not getattr(settings, "BRIGHTDATA_PROXY_ENABLED", False):
+        return None
+
+    host = (getattr(settings, "BRIGHTDATA_PROXY_HOST", "") or "").strip()
+    port = (getattr(settings, "BRIGHTDATA_PROXY_PORT", "") or "").strip()
+    user = (getattr(settings, "BRIGHTDATA_PROXY_USER", "") or "").strip()
+    password = (getattr(settings, "BRIGHTDATA_PROXY_PASSWORD", "") or "").strip()
+
+    if not host or not port:
+        return None
+
+    return {"host": host, "port": port, "user": user, "password": password}
+
 
 class FastInteractionBot:
     """
@@ -19,11 +71,39 @@ class FastInteractionBot:
     def __init__(self, account, proxy_data=None):
         self.account = account
         self.client = Client()
-        
-        # Configuración de Proxy
-        if proxy_data:
-            proxy_url = f"http://{proxy_data['user']}:{proxy_data['pass']}@{proxy_data['host']}:{proxy_data['port']}"
-            self.client.set_proxy(proxy_url)
+        self.proxy_data = proxy_data or _get_default_proxy_data()
+        self.proxy_url = build_proxy_url(self.proxy_data)
+        self.requests_proxies = (
+            {"http": self.proxy_url, "https": self.proxy_url} if self.proxy_url else None
+        )
+        proxy_label = "none"
+        if self.proxy_data:
+            proxy_label = f"{self.proxy_data.get('host')}:{self.proxy_data.get('port')}"
+
+        logger.info(
+            "fast_interaction_bot_proxy account=%s proxy=%s",
+            getattr(self.account, "username", "?"),
+            proxy_label,
+        )
+
+        if self.proxy_url:
+            try:
+                if hasattr(self.client, "set_proxy"):
+                    self.client.set_proxy(self.proxy_url)
+                else:
+                    self.client.proxy = self.proxy_url
+                logger.info(
+                    "instagrapi_proxy_set account=%s proxy=%s",
+                    getattr(self.account, "username", "?"),
+                    self.proxy_url,
+                )
+            except Exception as exc:
+                logger.warning(
+                    "instagrapi_proxy_failed account=%s proxy=%s error=%s",
+                    getattr(self.account, "username", "?"),
+                    self.proxy_url,
+                    exc,
+                )
 
     def log(self, msg, level='info'):
         """Escribe en la terminal y en la base de datos"""
