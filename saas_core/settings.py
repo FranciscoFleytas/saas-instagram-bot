@@ -115,6 +115,18 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
+AI_PROVIDER_DEFAULT = (os.getenv("AI_PROVIDER_DEFAULT", "GEMINI") or "GEMINI").upper()
+if AI_PROVIDER_DEFAULT not in {"GEMINI", "OLLAMA"}:
+    AI_PROVIDER_DEFAULT = "GEMINI"
+
+OLLAMA_BASE_URL = (os.getenv("OLLAMA_BASE_URL", "") or "").strip().rstrip("/")
+OLLAMA_API_KEY = (os.getenv("OLLAMA_API_KEY", "") or "").strip()
+OLLAMA_API_MODE = (os.getenv("OLLAMA_API_MODE", "openai") or "openai").strip().lower()
+OLLAMA_DEFAULT_MODEL = (os.getenv("OLLAMA_DEFAULT_MODEL", "") or "").strip()
+try:
+    OLLAMA_TIMEOUT = int(os.getenv("OLLAMA_TIMEOUT", "60"))
+except (TypeError, ValueError):
+    OLLAMA_TIMEOUT = 60
 
 # =========================
 # Bright Data Proxy (global fallback)

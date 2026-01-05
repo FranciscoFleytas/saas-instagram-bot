@@ -160,6 +160,8 @@ def execute_task(task: InteractionTask) -> Dict[str, Optional[str]]:
                         tone=getattr(campaign, "ai_tone", ""),
                         user_prompt=getattr(campaign, "ai_user_prompt", ""),
                         use_image_context=getattr(campaign, "ai_use_image_context", False),
+                        ai_provider=getattr(campaign, "ai_provider", None),
+                        ollama_model=getattr(campaign, "ollama_model", None),
                     )
                     comment_text = generated or "Great post!"
                     task.comment_text = comment_text

@@ -1,0 +1,1 @@
+cd ~/Saas && ./start_dev.sh

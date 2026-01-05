@@ -1,8 +1,17 @@
 import random
+from django import forms
+from django.conf import settings
 from django.contrib import admin, messages
 from django.db import transaction
 
-from .models import Agency, IGAccount, InteractionCampaign, InteractionTask
+from .models import (
+    Agency,
+    IGAccount,
+    InteractionCampaign,
+    InteractionTask,
+    get_ai_provider_default,
+    get_ollama_default_model,
+)
 
 
 @admin.register(Agency)
@@ -27,9 +36,77 @@ class IGAccountAdmin(admin.ModelAdmin):
 
 
 
+class InteractionCampaignForm(forms.ModelForm):
+    class Meta:
+        model = InteractionCampaign
+        fields = "__all__"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        mode = (
+            self.data.get("comment_mode")
+            or self.initial.get("comment_mode")
+            or getattr(self.instance, "comment_mode", "")
+            or "MANUAL"
+        ).upper()
+        provider = (
+            self.data.get("ai_provider")
+            or self.initial.get("ai_provider")
+            or getattr(self.instance, "ai_provider", "")
+            or get_ai_provider_default()
+        ).upper()
+        provider = provider if provider in {"GEMINI", "OLLAMA"} else "GEMINI"
+
+        if mode == "AI" and provider == "OLLAMA":
+            self.fields["ollama_model"].required = True
+        else:
+            self.fields["ollama_model"].required = False
+
+    def clean_comment_mode(self):
+        mode = (self.cleaned_data.get("comment_mode") or "MANUAL").upper()
+        if mode not in {"AI", "MANUAL"}:
+            mode = "MANUAL"
+        return mode
+
+    def clean_ai_provider(self):
+        provider = (self.cleaned_data.get("ai_provider") or get_ai_provider_default() or "GEMINI").upper()
+        if provider not in {"GEMINI", "OLLAMA"}:
+            raise forms.ValidationError("ai_provider debe ser GEMINI u OLLAMA.")
+        return provider
+
+    def clean(self):
+        cleaned = super().clean()
+        action = (cleaned.get("action") or "").upper()
+        comment_mode = (cleaned.get("comment_mode") or "MANUAL").upper()
+        cleaned["comment_mode"] = comment_mode
+
+        provider = (cleaned.get("ai_provider") or get_ai_provider_default() or "GEMINI").upper()
+        cleaned["ai_provider"] = provider
+
+        if action == "COMMENT" and comment_mode == "AI":
+            if provider not in {"GEMINI", "OLLAMA"}:
+                raise forms.ValidationError("Selecciona un proveedor AI válido (GEMINI u OLLAMA).")
+            if provider == "OLLAMA":
+                base = (getattr(settings, "OLLAMA_BASE_URL", "") or "").strip()
+                key = (getattr(settings, "OLLAMA_API_KEY", "") or "").strip()
+                if not base or not key:
+                    raise forms.ValidationError(
+                        "Configura OLLAMA_BASE_URL y OLLAMA_API_KEY en tu .env para usar OLLAMA."
+                    )
+                model = (cleaned.get("ollama_model") or get_ollama_default_model() or "").strip()
+                if not model:
+                    raise forms.ValidationError("Define un modelo para Ollama (OLLAMA_DEFAULT_MODEL o valor manual).")
+                cleaned["ollama_model"] = model
+        else:
+            cleaned["ollama_model"] = (cleaned.get("ollama_model") or "").strip()
+
+        return cleaned
+
+
 @admin.register(InteractionCampaign)
 class InteractionCampaignAdmin(admin.ModelAdmin):
-    list_display = ('name', 'action', 'status', 'bot_count', 'comment_mode', 'created_at')
+    form = InteractionCampaignForm
+    list_display = ('name', 'action', 'status', 'bot_count', 'comment_mode', 'ai_provider', 'created_at')
     readonly_fields = ('created_at', 'started_at', 'finished_at')
     fieldsets = (
         (None, {
@@ -40,6 +117,8 @@ class InteractionCampaignAdmin(admin.ModelAdmin):
                 'target_url',
                 'bot_count',
                 'comment_mode',
+                'ai_provider',
+                'ollama_model',
                 'manual_comments',
                 'ai_persona',
                 'ai_tone',
@@ -59,6 +138,16 @@ class InteractionCampaignAdmin(admin.ModelAdmin):
         obj.comment_mode = (obj.comment_mode or "MANUAL").upper()
         if obj.comment_mode not in {"AI", "MANUAL"}:
             obj.comment_mode = "MANUAL"
+
+        ai_provider = (obj.ai_provider or get_ai_provider_default() or "GEMINI").upper()
+        if ai_provider not in {"GEMINI", "OLLAMA"}:
+            ai_provider = "GEMINI"
+        obj.ai_provider = ai_provider
+
+        if ai_provider == "OLLAMA" and not (obj.ollama_model or "").strip():
+            obj.ollama_model = get_ollama_default_model()
+        else:
+            obj.ollama_model = (obj.ollama_model or "").strip()
 
         is_comment_manual = (obj.action or "").upper() == "COMMENT" and obj.comment_mode == "MANUAL"
         if is_comment_manual:
@@ -118,6 +207,8 @@ class InteractionCampaignAdmin(admin.ModelAdmin):
         max_bots = len(candidates)
 
         if max_bots == 0:
+            campaign.bot_count = 0
+            campaign.save(update_fields=["bot_count"])
             messages.warning(request, "No hay IGAccounts ACTIVAS con session_id para asignar.")
             return
 

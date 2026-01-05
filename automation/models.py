@@ -1,6 +1,24 @@
 # automation/models.py
 import uuid
+from django.conf import settings
 from django.db import models
+
+
+def get_ai_provider_default():
+    """
+    Retorna el proveedor AI por defecto definido en settings/env.
+    """
+    raw = getattr(settings, "AI_PROVIDER_DEFAULT", "GEMINI") or "GEMINI"
+    raw = str(raw).upper()
+    return raw if raw in {"GEMINI", "OLLAMA"} else "GEMINI"
+
+
+def get_ollama_default_model():
+    """
+    Modelo predeterminado para Ollama definido en settings/env.
+    """
+    return (getattr(settings, "OLLAMA_DEFAULT_MODEL", "") or "").strip()
+
 
 class Agency(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -33,6 +51,7 @@ class IGAccount(models.Model):
 class InteractionCampaign(models.Model):
     ACTION_CHOICES = [("LIKE", "LIKE"), ("COMMENT", "COMMENT")]
     COMMENT_MODE_CHOICES = [("AI", "AI"), ("MANUAL", "MANUAL")]
+    AI_PROVIDER_CHOICES = [("GEMINI", "GEMINI"), ("OLLAMA", "OLLAMA")]
     STATUS_CHOICES = [
         ("DRAFT", "DRAFT"), ("QUEUED", "QUEUED"), ("RUNNING", "RUNNING"),
         ("PAUSED", "PAUSED"), ("DONE", "DONE"), ("FAILED", "FAILED"),
@@ -55,6 +74,8 @@ class InteractionCampaign(models.Model):
         null=False,
     )
     manual_comments = models.TextField(blank=True, default="")
+    ai_provider = models.CharField(max_length=20, choices=AI_PROVIDER_CHOICES, default=get_ai_provider_default)
+    ollama_model = models.CharField(max_length=100, blank=True, default=get_ollama_default_model)
     ai_persona = models.CharField(max_length=255, blank=True)
     ai_tone = models.CharField(max_length=100, blank=True)
     ai_user_prompt = models.TextField(blank=True)

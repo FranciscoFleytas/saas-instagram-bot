@@ -1,9 +1,12 @@
 # SaaS Automation API
 
 ## Backend
+- Copia `.env.example` a `.env` y completa credenciales (incluye `AI_PROVIDER_DEFAULT`, `GEMINI_API_KEY`, `OLLAMA_BASE_URL` y `OLLAMA_API_KEY`).
 - Ejecutar chequeos: `./venv/bin/python manage.py check`
 - Migraciones: `./venv/bin/python manage.py migrate`
 - Servidor de desarrollo: `./venv/bin/python manage.py runserver 127.0.0.1:8000`
+- Worker de interacción: `./venv/bin/python manage.py run_worker`
+- Probar API remota de Ollama (requiere `OLLAMA_BASE_URL` y `OLLAMA_API_KEY`): `./venv/bin/python manage.py test_ollama`
 
 ## API (JSON)
 - Listar bots: `curl -s http://127.0.0.1:8000/api/bots/`
