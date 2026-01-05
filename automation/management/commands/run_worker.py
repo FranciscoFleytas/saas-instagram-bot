@@ -8,7 +8,8 @@ from django.db import transaction, models
 from django.utils import timezone
 
 from automation.adapters.interaction_adapter import execute_task
-from automation.models import InteractionTask, InteractionCampaign
+# Importamos IGAccount para poder buscar reemplazos
+from automation.models import InteractionTask, InteractionCampaign, IGAccount
 
 logger = logging.getLogger(__name__)
 
@@ -77,19 +78,55 @@ class Command(BaseCommand):
     def _finalize_task(self, task, result):
         now = timezone.now()
         success = result.get("success")
-        error_code = result.get("error_code")
+        error_code = result.get("error_code", "")
         message = result.get("message", "")
+
+        # Detección robusta de error de sesión (cookie caducada o login fallido)
+        is_session_error = (
+            error_code == "SESSION_ERROR" 
+            or "cookie" in str(message).lower() 
+            or "session" in str(message).lower()
+            or "login" in str(message).lower()
+        )
 
         if success:
             task.status = "SUCCESS"
             task.finished_at = now
             task.next_retry_at = None
         else:
-            if task.attempts < 3:
+            if is_session_error:
+                # 1. Marcar la tarea como ERROR definitivo (sin reintentos)
+                task.status = "ERROR"
+                task.finished_at = now
+                task.next_retry_at = None
+
+                # --- NUEVO: Actualizar el estado de la cuenta IGAccount ---
+                # Esto hará que aparezca como "SESSION_EXPIRED" en el Admin
+                try:
+                    account = task.ig_account
+                    # Solo actualizamos si no estaba ya marcada para evitar escrituras extra
+                    if account.status != "SESSION_EXPIRED":
+                        old_status = account.status
+                        account.status = "SESSION_EXPIRED"
+                        account.save(update_fields=["status"])
+                        logger.warning(
+                            f"Cuenta '{account.username}' marcada como SESSION_EXPIRED "
+                            f"(antes: {old_status}). Motivo: {message}"
+                        )
+                except Exception as e:
+                    logger.error(f"Error actualizando estado de cuenta {task.ig_account_id}: {e}")
+                # -----------------------------------------------------------
+
+                # 2. Buscar una cuenta de reemplazo para intentar la tarea de nuevo
+                self._spawn_replacement_task(task)
+
+            elif task.attempts < 3:
+                # Fallo recuperable (red, timeout, etc.), reintentamos la misma cuenta
                 task.status = "RETRY"
                 delay_index = min(task.attempts - 1, len(BACKOFF_SCHEDULE) - 1)
                 task.next_retry_at = now + BACKOFF_SCHEDULE[delay_index]
             else:
+                # Se agotaron los intentos normales
                 task.status = "ERROR"
                 task.finished_at = now
                 task.next_retry_at = None
@@ -105,6 +142,49 @@ class Command(BaseCommand):
                 "result_message",
             ]
         )
+
+    def _spawn_replacement_task(self, failed_task):
+        """
+        Busca una cuenta nueva (no usada en esta campaña) y crea una tarea
+        para reemplazar a la que falló por problemas de sesión.
+        """
+        campaign = failed_task.campaign
+        
+        # Obtenemos IDs de cuentas ya usadas en esta campaña para excluirlas
+        used_accounts_ids = InteractionTask.objects.filter(
+            campaign=campaign
+        ).values_list('ig_account_id', flat=True)
+
+        # Buscamos una cuenta activa que tenga session_id y no se haya usado
+        replacement_account = IGAccount.objects.filter(
+            agency=campaign.agency,
+            status="ACTIVE"
+        ).exclude(
+            session_id__isnull=True
+        ).exclude(
+            session_id=""
+        ).exclude(
+            id__in=used_accounts_ids
+        ).order_by('?').first() # Selección aleatoria
+
+        if replacement_account:
+            logger.info(
+                f"[REPLACEMENT] Sustituyendo cuenta fallida {failed_task.ig_account.username} "
+                f"por {replacement_account.username} en campaña {campaign.id}"
+            )
+            InteractionTask.objects.create(
+                campaign=campaign,
+                agency=campaign.agency,
+                ig_account=replacement_account,
+                action=failed_task.action,
+                post_url=failed_task.post_url,
+                comment_text=failed_task.comment_text, # Copiamos el texto (o vacío si es AI)
+                status="PENDING"
+            )
+        else:
+            logger.warning(
+                f"[REPLACEMENT] No hay más cuentas disponibles para reemplazar la tarea {failed_task.id}."
+            )
 
     def _update_campaign_status(self, campaign: InteractionCampaign):
         """

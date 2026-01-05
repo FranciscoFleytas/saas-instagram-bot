@@ -1,25 +1,25 @@
-from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
-from automation.ai_providers.ollama_client import FALLBACK_COMMENT, ollama_generate
+from automation.ai_providers.ollama_client import ollama_chat
 
 
 class Command(BaseCommand):
-    help = "Prueba la conectividad con Ollama generando un comentario corto."
+    help = "Prueba Ollama remoto vía API oficial (OLLAMA_BASE_URL + /api/chat)."
+
+    def add_arguments(self, parser):
+        parser.add_argument("--model", type=str, default=None, help="Modelo Ollama (ej: ministral-3:8b)")
+        parser.add_argument("--prompt", type=str, default="Decí hola en español, 1 frase.", help="Prompt de prueba")
 
     def handle(self, *args, **options):
-        base = (getattr(settings, "OLLAMA_BASE_URL", "") or "").strip()
-        key = (getattr(settings, "OLLAMA_API_KEY", "") or "").strip()
-        if not base or not key:
-            raise CommandError("Configura OLLAMA_BASE_URL y OLLAMA_API_KEY para probar la API remota de Ollama.")
+        model = options.get("model")
+        prompt = options.get("prompt")
 
-        prompt = "Write a short, upbeat Instagram comment about a great photo."
         try:
-            result = ollama_generate(prompt)
+            text = ollama_chat(prompt, model=model)
         except Exception as exc:
-            raise CommandError(f"Ollama no está respondiendo: {exc}")
+            raise CommandError(f"Ollama no respondió correctamente: {exc}")
 
-        snippet = (result or "").strip()[:200]
-        if snippet == FALLBACK_COMMENT:
-            raise CommandError("La llamada a Ollama devolvió el fallback; revisa el endpoint remoto y el modelo.")
-        self.stdout.write(self.style.SUCCESS(f"OK via {base} -> {snippet}"))
+        if not text.strip():
+            raise CommandError("Ollama devolvió vacío. Revisá OLLAMA_BASE_URL, OLLAMA_API_KEY y el modelo.")
+
+        self.stdout.write(self.style.SUCCESS(f"Ollama OK ✅ ({model or 'default'}): {text}"))

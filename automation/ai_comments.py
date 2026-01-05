@@ -1,14 +1,14 @@
-# automation/ai_comments.py
 import logging
 import os
 import random
 from typing import Optional
 
-import google.generativeai as genai
 from django.conf import settings
 
-from automation.ai_providers.ollama_client import ollama_generate
-from automation.models import get_ai_provider_default, get_ollama_default_model
+# Gemini (por ahora mantenemos tu lib actual, aunque te muestre warning)
+import google.generativeai as genai
+
+from automation.ai_providers.ollama_client import ollama_chat
 
 logger = logging.getLogger(__name__)
 
@@ -17,10 +17,19 @@ AI_PROVIDER_OLLAMA = "OLLAMA"
 AI_PROVIDERS = {AI_PROVIDER_GEMINI, AI_PROVIDER_OLLAMA}
 
 
-def _get_model() -> Optional[genai.GenerativeModel]:
-    api_key = getattr(settings, "GEMINI_API_KEY", None) or os.getenv("GEMINI_API_KEY")
+def _env(name: str, default: Optional[str] = None) -> Optional[str]:
+    return getattr(settings, name, None) or os.getenv(name) or default
+
+
+def _normalize_provider(value: Optional[str]) -> str:
+    chosen = (value or _env("AI_PROVIDER_DEFAULT", AI_PROVIDER_GEMINI) or AI_PROVIDER_GEMINI).upper().strip()
+    return chosen if chosen in AI_PROVIDERS else AI_PROVIDER_GEMINI
+
+
+def _get_gemini_model() -> Optional[genai.GenerativeModel]:
+    api_key = _env("GEMINI_API_KEY")
     if not api_key:
-        logger.warning("GEMINI_API_KEY no configurada; usando comentario por defecto.")
+        logger.warning("GEMINI_API_KEY no configurada; fallback a comentario por defecto.")
         return None
 
     try:
@@ -61,18 +70,13 @@ INPUT CONTEXT:
 - CAPTION: "Caption not available. Respond generically but relevant."
 
 GUIDELINES:
-1. Match the detected or implied language from any user instruction; otherwise default to English.
-2. Avoid hashtags and emojis unless explicitly requested.
-3. Keep tone human and specific, no generic praise.
+1. Match the language requested in IMPORTANT USER INSTRUCTION; otherwise default to Spanish.
+2. Avoid hashtags and avoid emojis unless explicitly requested.
+3. Keep tone human and specific, not generic praise.
 4. ANGLE: {selected_angle}
+
+RETURN ONLY THE COMMENT TEXT.
 """.strip()
-
-
-def _normalize_provider(value: Optional[str]) -> str:
-    chosen = (value or get_ai_provider_default() or AI_PROVIDER_GEMINI).upper()
-    if chosen not in AI_PROVIDERS:
-        return AI_PROVIDER_GEMINI
-    return chosen
 
 
 def generate_ai_comment(
@@ -85,26 +89,28 @@ def generate_ai_comment(
     ollama_model: Optional[str] = None,
 ) -> str:
     """
-    Genera un comentario corto para Instagram usando Gemini u Ollama.
+    Genera un comentario corto para Instagram usando Gemini u Ollama (REMOTO por API).
     """
     provider = _normalize_provider(ai_provider)
     prompt = _build_prompt(post_url, persona, tone, user_prompt, use_image_context)
 
     if provider == AI_PROVIDER_OLLAMA:
         try:
-            model_name = ollama_model or get_ollama_default_model()
-            return ollama_generate(prompt, model=model_name)
+            text = ollama_chat(prompt, model=ollama_model)
+            return (text or "").strip() or "Buen post."
         except Exception as exc:
-            logger.error("Fallo generando comentario con Ollama: %s", exc)
-            return "Great post!"
+            logger.error("Fallo generando comentario con Ollama remoto: %s", exc)
+            return "Buen post."
 
-    model = _get_model()
+    model = _get_gemini_model()
     if not model:
-        return "Great post!"
+        return "Buen post."
 
     try:
         response = model.generate_content(prompt)
-        return response.text.strip().replace('"', "").replace("Comment:", "")
+        text = (response.text or "").strip()
+        # limpieza mínima
+        return text.replace('"', "").replace("Comment:", "").strip() or "Buen post."
     except Exception as exc:
-        logger.error("Fallo generando comentario IA (Gemini): %s", exc)
-        return "Great post!"
+        logger.error("Fallo generando comentario con Gemini: %s", exc)
+        return "Buen post."
