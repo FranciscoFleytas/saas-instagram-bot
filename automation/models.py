@@ -1,24 +1,17 @@
-# automation/models.py
 import uuid
-from django.conf import settings
 from django.db import models
+from django.conf import settings
 
 
 def get_ai_provider_default():
-    """
-    Retorna el proveedor AI por defecto definido en settings/env.
-    """
-    raw = getattr(settings, "AI_PROVIDER_DEFAULT", "GEMINI") or "GEMINI"
-    raw = str(raw).upper()
-    return raw if raw in {"GEMINI", "OLLAMA"} else "GEMINI"
+    provider = (getattr(settings, "AI_PROVIDER_DEFAULT", "") or "GEMINI").upper()
+    if provider not in {"GEMINI", "OLLAMA"}:
+        provider = "GEMINI"
+    return provider
 
 
 def get_ollama_default_model():
-    """
-    Modelo predeterminado para Ollama definido en settings/env.
-    """
-    return (getattr(settings, "OLLAMA_DEFAULT_MODEL", "") or "").strip()
-
+    return (getattr(settings, "OLLAMA_DEFAULT_MODEL", "") or "ministral-3:8b").strip()
 
 class Agency(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -29,32 +22,51 @@ class Agency(models.Model):
 
     class Meta:
         db_table = "agencies"
-        managed = False  # MUY IMPORTANTE: Django no intenta crear/alterar esta tabla
+        managed = False  # Django no toca esta tabla
 
+
+# automation/models.py
 
 class IGAccount(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    agency = models.ForeignKey(Agency, on_delete=models.CASCADE, db_column="agency_id")
+    agency = models.ForeignKey(
+        Agency, 
+        on_delete=models.CASCADE, 
+        db_column="agency_id",
+        null=True, 
+        blank=True
+    )
     username = models.TextField()
     status = models.TextField(default="ACTIVE")
-    session_id = models.TextField(null=True, blank=True)  # ajusta el nombre si en DB se llama distinto
+    session_id = models.TextField(null=True, blank=True)
+    
+    # --- CAMPO NUEVO ---
+    cookies = models.JSONField(default=dict, blank=True)
+    
     proxy_host = models.CharField(max_length=255, blank=True, default="")
     proxy_port = models.PositiveIntegerField(null=True, blank=True)
     proxy_user = models.CharField(max_length=255, blank=True, default="")
     proxy_password = models.CharField(max_length=255, blank=True, default="")
-    created_at = models.DateTimeField()
+    
+    # IMPORTANTE: Agrega auto_now_add=True para que se llene solo al importar
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = "ig_accounts"
-        managed = False
-# automation/models.py (mismo archivo)
+        managed = True  # <--- ESTO ES CRÍTICO: Cambialo de False a True
+
+
 class InteractionCampaign(models.Model):
     ACTION_CHOICES = [("LIKE", "LIKE"), ("COMMENT", "COMMENT")]
     COMMENT_MODE_CHOICES = [("AI", "AI"), ("MANUAL", "MANUAL")]
-    AI_PROVIDER_CHOICES = [("GEMINI", "GEMINI"), ("OLLAMA", "OLLAMA")]
     STATUS_CHOICES = [
         ("DRAFT", "DRAFT"), ("QUEUED", "QUEUED"), ("RUNNING", "RUNNING"),
         ("PAUSED", "PAUSED"), ("DONE", "DONE"), ("FAILED", "FAILED"),
+    ]
+    # --- NUEVO: Opciones de Proveedor IA ---
+    AI_PROVIDERS = [
+        ('GEMINI', 'Gemini'),
+        ('OLLAMA', 'Ollama'),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -65,7 +77,8 @@ class InteractionCampaign(models.Model):
 
     target_url = models.URLField()
     bot_count = models.PositiveIntegerField(default=1)
-    post_urls = models.JSONField(default=list)  # ["https://instagram.com/p/.../", ...]
+    post_urls = models.JSONField(default=list)
+    
     comment_mode = models.CharField(
         max_length=10,
         choices=COMMENT_MODE_CHOICES,
@@ -74,12 +87,16 @@ class InteractionCampaign(models.Model):
         null=False,
     )
     manual_comments = models.TextField(blank=True, default="")
-    ai_provider = models.CharField(max_length=20, choices=AI_PROVIDER_CHOICES, default=get_ai_provider_default)
-    ollama_model = models.CharField(max_length=100, blank=True, default=get_ollama_default_model)
+    
+    # Configuración de IA
     ai_persona = models.CharField(max_length=255, blank=True)
     ai_tone = models.CharField(max_length=100, blank=True)
     ai_user_prompt = models.TextField(blank=True)
     ai_use_image_context = models.BooleanField(default=False)
+    
+    # --- AGREGADO: Selección de Proveedor ---
+    ai_provider = models.CharField(max_length=20, choices=AI_PROVIDERS, default='OLLAMA')
+    ollama_model = models.CharField(max_length=100, default='ministral-3:8b')
 
     created_at = models.DateTimeField(auto_now_add=True)
     started_at = models.DateTimeField(null=True, blank=True)
@@ -129,3 +146,12 @@ class InteractionTask(models.Model):
             models.Index(fields=["status", "next_retry_at"]),
             models.Index(fields=["ig_account"]),
         ]
+
+# --- AGREGADO: Modelo de Logs para scripts ---
+class SystemLog(models.Model):
+    level = models.CharField(max_length=20, default='INFO')
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "system_logs"
