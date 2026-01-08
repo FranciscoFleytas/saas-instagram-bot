@@ -18,11 +18,11 @@ class Agency(models.Model):
     name = models.TextField()
     plan_level = models.TextField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = "agencies"
-        managed = False  # Django no toca esta tabla
+        managed = True  # Django no toca esta tabla
 
 
 # automation/models.py
