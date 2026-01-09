@@ -50,10 +50,10 @@ def parse_and_import():
         filename = '5 all.txt'
     
     if not os.path.exists(filename):
-        print(f"❌ Error: No encuentro 'all.txt' ni '5 all.txt'")
+        print(f" Error: No encuentro 'all.txt' ni '5 all.txt'")
         return
 
-    print(f"📂 Procesando archivo: {filename}")
+    print(f" Procesando archivo: {filename}")
     agency, _ = Agency.objects.get_or_create(name="Imported Scrapers Pool")
 
     count = 0
@@ -84,7 +84,7 @@ def parse_and_import():
                     cookies_list = json.loads(clean_json)
                 except json.JSONDecodeError as e:
                     # Si falla, mostramos log pero seguimos con la siguiente
-                    print(f"⚠️ JSON irrecuperable para {username}: {e}")
+                    print(f"️ JSON irrecuperable para {username}: {e}")
                     continue
 
                 # Extraer SessionID
@@ -96,7 +96,7 @@ def parse_and_import():
                             break
                 
                 if not session_id:
-                    print(f"⚠️ Sin sessionid: {username}")
+                    print(f"️ Sin sessionid: {username}")
                     continue
 
                 # Guardar
@@ -113,13 +113,13 @@ def parse_and_import():
                 account.save()
 
                 state = "Nuevo" if created else "Actualizado"
-                print(f"✅ [{state}] {username} | OK")
+                print(f" [{state}] {username} | OK")
                 count += 1
 
             except Exception as e:
-                print(f"❌ Error línea: {e}")
+                print(f" Error línea: {e}")
 
-    print(f"\n🚀 Importación finalizada. Total cuentas: {count}")
+    print(f"\n Importación finalizada. Total cuentas: {count}")
 
 if __name__ == "__main__":
     parse_and_import()

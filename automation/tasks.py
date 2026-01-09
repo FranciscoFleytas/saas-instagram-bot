@@ -34,7 +34,7 @@ def generate_api_comment(user_prompt, user_persona):
         return response.text.strip().replace('"', '')
     except Exception as e:
         logger.error(f"[AI ERROR] Falló generación: {e}")
-        return "Great post! 🔥"
+        return "Great post! "
 
 # ==============================================================================
 # ==============================================================================
@@ -47,7 +47,7 @@ def task_run_comment(self, account_id, post_url, do_like=True, do_save=False, do
     try:
         # --- CAMINO A: MODO GRANJA (API + ENJAMBRE) ---
         if use_fast_mode:
-            logger.info(f"[TASK] 🚀 Iniciando MODO ENJAMBRE (API) en {post_url}")
+            logger.info(f"[TASK]  Iniciando MODO ENJAMBRE (API) en {post_url}")
             
             # 1. Obtener TODAS las cuentas activas del Pool
             try:
@@ -70,7 +70,7 @@ def task_run_comment(self, account_id, post_url, do_like=True, do_save=False, do
             # BUCLE DE ATAQUE (Una por una)
             for farm_acc in farm_accounts:
                 try:
-                    logger.info(f"[SWARM] ➡️ Turno de: {farm_acc.username}")
+                    logger.info(f"[SWARM] ️ Turno de: {farm_acc.username}")
                     
                     bot = FastInteractionBot(farm_acc, proxy_data=None)
                     
@@ -88,7 +88,7 @@ def task_run_comment(self, account_id, post_url, do_like=True, do_save=False, do
                     # Ejecutar Acción
                     if bot.execute(post_url, do_like, do_comment, comment_text):
                         success_count += 1
-                        logger.info(f"   ✅ {farm_acc.username} completó la misión.")
+                        logger.info(f"    {farm_acc.username} completó la misión.")
                     else:
                         fail_count += 1
                     
@@ -101,7 +101,7 @@ def task_run_comment(self, account_id, post_url, do_like=True, do_save=False, do
                     logger.error(f"   [ERROR] Bot {farm_acc.username} crasheó: {inner_e}")
                     fail_count += 1
 
-            return f"SWARM_REPORT: ✅ {success_count} Exitosos | ❌ {fail_count} Fallidos"
+            return f"SWARM_REPORT:  {success_count} Exitosos |  {fail_count} Fallidos"
 
         # --- CAMINO B: MODO VISUAL (Selenium) ---
         else:

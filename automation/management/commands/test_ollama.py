@@ -22,4 +22,4 @@ class Command(BaseCommand):
         if not text.strip():
             raise CommandError("Ollama devolvió vacío. Revisá OLLAMA_BASE_URL, OLLAMA_API_KEY y el modelo.")
 
-        self.stdout.write(self.style.SUCCESS(f"Ollama OK ✅ ({model or 'default'}): {text}"))
+        self.stdout.write(self.style.SUCCESS(f"Ollama OK  ({model or 'default'}): {text}"))

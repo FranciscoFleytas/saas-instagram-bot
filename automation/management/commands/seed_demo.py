@@ -41,7 +41,7 @@ class Command(BaseCommand):
                 "bot_count": len(accounts),
                 "post_urls": ["https://www.instagram.com/p/XXXX/"],
                 "comment_mode": "MANUAL",
-                "manual_comments": "🔥 Excelente post!",
+                "manual_comments": " Excelente post!",
             },
         )
 
@@ -55,7 +55,7 @@ class Command(BaseCommand):
                     action="COMMENT",
                     post_url=url,
                     defaults={
-                        "comment_text": "🔥 Excelente post!",
+                        "comment_text": " Excelente post!",
                         "status": "PENDING",
                     },
                 )

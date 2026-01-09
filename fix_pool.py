@@ -15,7 +15,7 @@ def inspect_and_reset():
     try:
         agency = Agency.objects.get(name="Imported Scrapers Pool")
     except Agency.DoesNotExist:
-        print("❌ Error: No existe la agencia 'Imported Scrapers Pool'")
+        print(" Error: No existe la agencia 'Imported Scrapers Pool'")
         return
 
     accounts = IGAccount.objects.filter(agency=agency)
@@ -26,14 +26,14 @@ def inspect_and_reset():
 
     active_count = 0
     for acc in accounts:
-        has_session = "✅ Sí" if acc.session_id else "❌ No"
+        has_session = " Sí" if acc.session_id else " No"
         print(f"{acc.username:<20} | {acc.status:<15} | {has_session}")
         
         if acc.status == 'active':
             active_count += 1
 
     print("-" * 55)
-    print(f"⚠️ Actualmente SOLO {active_count} cuentas están rotando (status='active').")
+    print(f"️ Actualmente SOLO {active_count} cuentas están rotando (status='active').")
     
     # --- OPCIÓN DE RESET ---
     print("\n¿Quieres forzar a TODAS las cuentas a estado 'active' para que roten?")
@@ -41,7 +41,7 @@ def inspect_and_reset():
     
     if confirm.upper() == 'SI':
         updated = accounts.update(status='active')
-        print(f"\n✅ {updated} cuentas restablecidas a 'active'.")
+        print(f"\n {updated} cuentas restablecidas a 'active'.")
         print("Ahora el sistema usará todas aleatoriamente.")
     else:
         print("\nNo se hicieron cambios.")

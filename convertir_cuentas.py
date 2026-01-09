@@ -9,10 +9,10 @@ def procesar_cuentas():
     
     # 1. Leer el archivo de texto
     if not os.path.exists(input_file):
-        print(f"❌ Error: No encuentro el archivo {input_file}")
+        print(f" Error: No encuentro el archivo {input_file}")
         return
 
-    print(f"🔄 Procesando {input_file}...")
+    print(f" Procesando {input_file}...")
     
     with open(input_file, 'r', encoding='utf-8') as f:
         lineas = f.readlines()
@@ -49,7 +49,7 @@ def procesar_cuentas():
                 count += 1
                 
         except Exception as e:
-            print(f"⚠️ Error procesando una línea: {e}")
+            print(f"️ Error procesando una línea: {e}")
             continue
 
     # 2. Guardar o combinar con cuentas.json existente
@@ -74,8 +74,8 @@ def procesar_cuentas():
     with open(output_file, 'w', encoding='utf-8') as f:
         json.dump(lista_final, f, indent=4)
 
-    print(f"✅ ¡Éxito! Se han procesado {count} cuentas nuevas.")
-    print(f"📂 Archivo guardado: {output_file} (Total cuentas: {len(lista_final)})")
+    print(f" ¡Éxito! Se han procesado {count} cuentas nuevas.")
+    print(f" Archivo guardado: {output_file} (Total cuentas: {len(lista_final)})")
 
 if __name__ == "__main__":
     procesar_cuentas()

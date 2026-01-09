@@ -171,7 +171,7 @@ export default function CampaignsPage() {
                 rows={4}
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
-                placeholder="🔥 Comentario..."
+                placeholder=" Comentario..."
               />
               <div className="muted">
                 Tip: luego podemos generar comentario con IA por cuenta. Por ahora MVP: mismo texto.

@@ -28,11 +28,11 @@ def check_account_status(account):
         client.set_proxy(proxy_url)
 
     try:
-        print(f"🔍 Verificando: {account.username}...")
+        print(f" Verificando: {account.username}...")
 
         # 1. Login vía SessionID
         if not account.session_id:
-            print(f"   ❌ Sin SessionID")
+            print(f"    Sin SessionID")
             return "no_session"
 
         client.login_by_sessionid(account.session_id)
@@ -41,19 +41,19 @@ def check_account_status(account):
         # Si la cuenta está baneada o la cookie venció, esto fallará.
         me = client.account_info()
         
-        print(f"   ✅ ACTIVA | ID: {me.pk} | Nombre: {me.full_name}")
+        print(f"    ACTIVA | ID: {me.pk} | Nombre: {me.full_name}")
         return "active"
 
     except (ChallengeRequired, CheckpointRequired):
-        print(f"   ⚠️ CHALLENGE (Requiere verificación SMS/Email)")
+        print(f"   ️ CHALLENGE (Requiere verificación SMS/Email)")
         return "challenge"
     
     except (LoginRequired, BadPassword):
-        print(f"   ❌ COOKIE VENCIDA (Requiere re-login con password)")
+        print(f"    COOKIE VENCIDA (Requiere re-login con password)")
         return "expired"
     
     except FeedbackRequired:
-        print(f"   ⚠️ LIMITADA (Action Block temporal)")
+        print(f"   ️ LIMITADA (Action Block temporal)")
         return "limited"
 
     except Exception as e:
@@ -65,7 +65,7 @@ def check_account_status(account):
         elif "challenge_required" in error_msg:
             return "challenge"
         
-        print(f"   ❌ ERROR DESCONOCIDO: {e}")
+        print(f"    ERROR DESCONOCIDO: {e}")
         return "error"
 
 def main():
@@ -105,11 +105,11 @@ def main():
         time.sleep(1)
 
     print("\n--- REPORTE FINAL ---")
-    print(f"✅ Activas: {stats['active']}")
-    print(f"❌ Cookies Vencidas: {stats['expired']}")
-    print(f"⚠️ En Challenge: {stats['challenge']}")
-    print(f"⚠️ Limitadas: {stats['limited']}")
-    print(f"❌ Errores: {stats['error']}")
+    print(f" Activas: {stats['active']}")
+    print(f" Cookies Vencidas: {stats['expired']}")
+    print(f"️ En Challenge: {stats['challenge']}")
+    print(f"️ Limitadas: {stats['limited']}")
+    print(f" Errores: {stats['error']}")
 
 if __name__ == "__main__":
     main()

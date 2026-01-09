@@ -65,4 +65,4 @@ class Command(BaseCommand):
             )
             count += 1
 
-        self.stdout.write(self.style.SUCCESS(f"✅ Se importaron/actualizaron {count} cuentas con cookies full."))
+        self.stdout.write(self.style.SUCCESS(f" Se importaron/actualizaron {count} cuentas con cookies full."))

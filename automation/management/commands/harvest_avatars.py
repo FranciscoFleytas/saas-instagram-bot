@@ -116,7 +116,7 @@ class SeleniumHarvesterBot:
         options.add_argument("--password-store=basic")
         options.add_argument("--lang=en-US") 
 
-        self.log(f"🚀 Iniciando navegador (v142) con cuenta: {account.username}")
+        self.log(f" Iniciando navegador (v142) con cuenta: {account.username}")
         self.driver = uc.Chrome(options=options, version_main=142)
         self.driver.set_window_size(1280, 900)
         self.current_plugin_path = plugin_path
@@ -145,17 +145,17 @@ class SeleniumHarvesterBot:
                     EC.presence_of_element_located((By.XPATH, "//a[contains(@href, '/explore/')] | //svg[@aria-label='Home'] | //svg[@aria-label='Inicio']"))
                 )
                 self._dismiss_popups()
-                self.log("✅ Login exitoso.", 'success')
+                self.log(" Login exitoso.", 'success')
                 return True
             except:
                 if "login" in self.driver.current_url:
-                    self.log("❌ La cookie expiró.", 'error')
+                    self.log(" La cookie expiró.", 'error')
                 else:
-                    self.log("⚠️ No se confirmó el login (posible checkpoint).", 'warn')
+                    self.log("️ No se confirmó el login (posible checkpoint).", 'warn')
                 return False
 
         except Exception as e:
-            self.log(f"🔥 Error driver: {e}", 'error')
+            self.log(f" Error driver: {e}", 'error')
             self._cleanup()
             return False
 
@@ -203,7 +203,7 @@ class SeleniumHarvesterBot:
 
         for account in self.pool:
             if self.login_and_validate(account):
-                self.log(f"🎯 Navegando a: {target_username}")
+                self.log(f" Navegando a: {target_username}")
                 self.driver.get(f"https://www.instagram.com/{target_username}/")
                 time.sleep(4)
                 self._dismiss_popups()
@@ -273,7 +273,7 @@ class SeleniumHarvesterBot:
                                 self.log(f"⏳ Scroll vacío ({consecutive_fails}/{MAX_CONSECUTIVE_FAILS}) - Intentando bajar...", 'info')
                             
                             if consecutive_fails >= MAX_CONSECUTIVE_FAILS:
-                                self.log("⚠️ Timeout: No cargan más usuarios.", 'warn')
+                                self.log("️ Timeout: No cargan más usuarios.", 'warn')
                                 break
                             
                             # ESTRATEGIA DE SCROLL DE EMERGENCIA
@@ -338,7 +338,7 @@ class SeleniumHarvesterBot:
                              self.driver.execute_script("arguments[0].scrollIntoView(true);", last_element_found)
                         time.sleep(random.uniform(1.5, 3))
 
-                    self.log(f"✅ Finalizado. {collected} fotos en total.", 'success')
+                    self.log(f" Finalizado. {collected} fotos en total.", 'success')
                     break 
 
                 except Exception as e:

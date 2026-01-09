@@ -58,7 +58,7 @@ class FastScraperBot:
         if self.current_account:
             self.current_account.last_used = timezone.now()
             self.current_account.save()
-            self.log(f"🧊 Cuenta {self.current_account.username} entra en enfriamiento ({self.COOLDOWN_MINUTES} min).", 'info')
+            self.log(f" Cuenta {self.current_account.username} entra en enfriamiento ({self.COOLDOWN_MINUTES} min).", 'info')
 
     def _get_next_account(self):
         """
@@ -82,7 +82,7 @@ class FastScraperBot:
             new_acc = candidates.first()
             
             old_name = self.current_account.username if self.current_account else 'Inicio'
-            self.log(f"🔄 Rotación: {old_name} -> {new_acc.username} (Disponible)", 'warn')
+            self.log(f" Rotación: {old_name} -> {new_acc.username} (Disponible)", 'warn')
             
             self.current_account = new_acc
             self.current_account_usage = 0 # Reiniciar contador local
@@ -150,7 +150,7 @@ class FastScraperBot:
         return "-"
 
     def run(self, target_username, max_leads=50):
-        self.log(f"⚡ Iniciando Scraping (Persistente): @{target_username}", 'warn')
+        self.log(f" Iniciando Scraping (Persistente): @{target_username}", 'warn')
         
         if not self.login():
             return "FAILED: Sin cuentas disponibles (Pool en enfriamiento)."

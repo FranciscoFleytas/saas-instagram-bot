@@ -49,9 +49,9 @@ class Command(BaseCommand):
             time.sleep(2)
 
         self.stdout.write(self.style.SUCCESS(f"\nResumen:"))
-        self.stdout.write(f"✅ Activas: {stats['active']}")
-        self.stdout.write(f"💀 Expiradas (SESSION_EXPIRED): {stats['expired']}")
-        self.stdout.write(f"⚠️ Challenge: {stats['challenge']}")
+        self.stdout.write(f" Activas: {stats['active']}")
+        self.stdout.write(f" Expiradas (SESSION_EXPIRED): {stats['expired']}")
+        self.stdout.write(f"️ Challenge: {stats['challenge']}")
 
     def check_session(self, account):
         """Intenta validar la sesión usando instagrapi"""
@@ -79,21 +79,21 @@ class Command(BaseCommand):
             # Prueba de Fuego: Obtener info propia
             client.account_info()
             
-            self.stdout.write(self.style.SUCCESS(f"[{account.username}] ✅ OK"))
+            self.stdout.write(self.style.SUCCESS(f"[{account.username}]  OK"))
             return "ACTIVE"
 
         except (LoginRequired, BadPassword):
-            self.stdout.write(self.style.ERROR(f"[{account.username}] 💀 Session Expirada"))
+            self.stdout.write(self.style.ERROR(f"[{account.username}]  Session Expirada"))
             self.mark_as(account, "SESSION_EXPIRED")
             return "SESSION_EXPIRED"
 
         except (ChallengeRequired, FeedbackRequired):
-            self.stdout.write(self.style.WARNING(f"[{account.username}] ⚠️ Challenge/Limitada"))
+            self.stdout.write(self.style.WARNING(f"[{account.username}] ️ Challenge/Limitada"))
             self.mark_as(account, "CHALLENGE")
             return "CHALLENGE"
 
         except Exception as e:
-            self.stdout.write(self.style.ERROR(f"[{account.username}] ❌ Error desconocido: {e}"))
+            self.stdout.write(self.style.ERROR(f"[{account.username}]  Error desconocido: {e}"))
             return "ERROR"
 
     def mark_as(self, account, new_status):
