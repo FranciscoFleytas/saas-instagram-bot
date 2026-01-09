@@ -86,15 +86,16 @@ WSGI_APPLICATION = 'saas_core.wsgi.application'
 # DATABASE
 # =========================
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('POSTGRES_DB', 'ig_automation_db'),
-        'USER': os.getenv('POSTGRES_USER', 'admin_user'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'master_password_2025'),
-        'HOST': os.getenv('POSTGRES_HOST', '127.0.0.1'),
-        'PORT': os.getenv('POSTGRES_PORT', '5432'),
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.getenv("POSTGRES_DB", "ig_automation_db"),
+        "USER": os.getenv("POSTGRES_USER", "admin_user"),
+        "PASSWORD": os.getenv("POSTGRES_PASSWORD", "master_password_2025"),
+        "HOST": os.getenv("POSTGRES_HOST", "127.0.0.1"),
+        "PORT": os.getenv("POSTGRES_PORT", "5432"),
     }
 }
+
 
 # =========================
 # AUTH / I18N

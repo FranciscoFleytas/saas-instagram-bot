@@ -171,3 +171,112 @@ class FastInteractionBot:
         except Exception as e:
             self.log(f"🔥 Error Crítico en Ejecución: {e}", 'error')
             return False
+        
+    #FOLLOW METHODS
+
+
+    def _resolve_user_id(self, target_username: str) -> int:
+        """
+        Resuelve el user_id (pk) evitando GQL.
+        1) endpoint privado usernameinfo (más estable en instagrapi)
+        2) fallback: search_users
+        """
+        username = (target_username or "").strip().lstrip("@")
+        if not username:
+            raise ValueError("target_username vacío")
+
+        # Intento 1: endpoint privado (evita GQL)
+        try:
+            data = self.client.private_request(f"users/{username}/usernameinfo/")
+            return int(data["user"]["pk"])
+        except Exception as e1:
+            self.log(f"⚠️ No pude resolver user_id por usernameinfo: {e1}", "warn")
+
+        # Intento 2: búsqueda (también usa endpoints privados)
+        try:
+            results = self.client.search_users(username, amount=10)
+            for u in results:
+                if getattr(u, "username", "").lower() == username.lower():
+                    return int(getattr(u, "pk"))
+        except Exception as e2:
+            self.log(f"⚠️ No pude resolver user_id por search_users: {e2}", "warn")
+
+        raise RuntimeError(f"No se pudo resolver user_id para @{username}")
+
+    def follow_user(self, target_username: str, check_friendship: bool = True) -> bool:
+        try:
+            username = (target_username or "").strip().lstrip("@")
+            if not username:
+                self.log("❌ target_username vacío", "error")
+                return False
+
+            # Resuelve user_id sin GQL
+            user_id = self._resolve_user_id(username)
+
+            # Pausa humana pequeña
+            time.sleep(random.uniform(1.0, 2.0))
+
+            # (Opcional) evitar follow duplicado
+            if check_friendship:
+                try:
+                    fr = self.client.user_friendship(user_id)
+                    if fr.get("following") or fr.get("outgoing_request"):
+                        self.log(f"✅ Ya estaba siguiendo / solicitado: @{username}", "success")
+                        return True
+                except Exception as e:
+                    self.log(f"⚠️ No pude validar friendship: {e}", "warn")
+
+            # Ejecuta follow
+            try:
+                self.client.user_follow(user_id)
+                self.log(f"➕ Follow enviado a @{username} por {self.account.username}", "success")
+                time.sleep(random.uniform(1.0, 3.0))
+                return True
+            except Exception as e:
+                self.log(f"⚠️ Falló Follow a @{username}: {e}", "error")
+                return False
+
+        except Exception as e:
+            self.log(f"🔥 Error crítico en follow_user(@{target_username}): {e}", "error")
+            return False    
+        
+    #UNFOLLOW METHODS
+
+    def unfollow_user(self, target_username: str, check_friendship: bool = True) -> bool:
+        try:
+            username = (target_username or "").strip().lstrip("@")
+            if not username:
+                self.log("❌ target_username vacío", "error")
+                return False
+
+            # Resuelve user_id sin GQL
+            user_id = self._resolve_user_id(username)
+
+            # Pausa humana pequeña
+            time.sleep(random.uniform(1.0, 2.0))
+
+            # (Opcional) evitar unfollow duplicado
+            if check_friendship:
+                try:
+                    fr = self.client.user_friendship(user_id)
+                    if not fr.get("following"):
+                        self.log(f"✅ Ya no seguía a @{username}", "success")
+                        return True
+                except Exception as e:
+                    self.log(f"⚠️ No pude validar friendship: {e}", "warn")
+
+            # Ejecuta unfollow
+            try:
+                self.client.user_unfollow(user_id)
+                self.log(f"➖ Unfollow enviado a @{username} por {self.account.username}", "success")
+                time.sleep(random.uniform(1.0, 3.0))
+                return True
+            except Exception as e:
+                self.log(f"⚠️ Falló Unfollow a @{username}: {e}", "error")
+                return False
+
+        except Exception as e:
+            self.log(f"🔥 Error crítico en unfollow_user(@{target_username}): {e}", "error")
+            return False
+    
+   
