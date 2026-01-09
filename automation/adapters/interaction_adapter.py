@@ -331,3 +331,13 @@ def execute_task(task: InteractionTask) -> Dict[str, Optional[str]]:
         if DEBUG_BOT:
             print(f"[DEBUG][EXCEPTION] {exc}")
         return {"success": False, "error_code": _map_error_code(exc), "message": str(exc)}
+
+class InteractionAdapter:
+    def __init__(self, account):
+        self.account = account
+
+    def execute_task(self, task):
+        # Si por lo que sea la task no trae ig_account, usamos la account inyectada
+        if getattr(task, "ig_account", None) is None and self.account is not None:
+            task.ig_account = self.account
+        return execute_task(task)
